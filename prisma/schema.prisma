@@ -1,0 +1,393 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  super_admin
+  center_admin
+  user
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Char(36)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  fullName     String   @map("full_name") @db.VarChar(255)
+  phoneNumber  String?  @map("phone_number") @db.VarChar(20)
+  role         UserRole @default(user)
+  centerId     String?  @map("center_id") @db.Char(36)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  center           Center?        @relation(fields: [centerId], references: [id], onDelete: SetNull)
+  createdCenter    Center[]       @relation("CenterCreator")
+  sessions         UserSession[]
+  recordedPayments Payment[]      @relation("RecordedPayments")
+
+  @@map("users")
+}
+
+model Center {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @db.VarChar(255)
+  location    String   @db.Text
+  phoneNumber String?  @map("phone_number") @db.VarChar(20)
+  email       String?  @db.VarChar(255)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdBy   String   @map("created_by") @db.Char(36)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator  User      @relation("CenterCreator", fields: [createdBy], references: [id])
+  admins   User[]
+  years    Year[]
+  fields   Field[]
+  subjects Subject[]
+  teachers Teacher[]
+  groups   Group[]
+  students Student[]
+  events   Event[]
+  payments Payment[]
+
+  @@map("centers")
+}
+
+model Year {
+  id       String  @id @default(uuid()) @db.Char(36)
+  name     String  @db.VarChar(100)
+  order    Int
+  isActive Boolean @default(true) @map("is_active")
+  centerId String  @map("center_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  center   Center    @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  fields   Field[]
+  subjects Subject[]
+  students Student[]
+
+  @@map("years")
+}
+
+model Field {
+  id       String  @id @default(uuid()) @db.Char(36)
+  name     String  @db.VarChar(100)
+  yearId   String  @map("year_id") @db.Char(36)
+  centerId String  @map("center_id") @db.Char(36)
+  isActive Boolean @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  year     Year    @relation(fields: [yearId], references: [id], onDelete: Cascade)
+  center   Center  @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  subjects Subject[]
+  students Student[]
+
+  @@map("fields")
+}
+
+model Subject {
+  id         String  @id @default(uuid()) @db.Char(36)
+  name       String  @db.VarChar(100)
+  monthlyFee Decimal @map("monthly_fee") @db.Decimal(10, 2)
+  yearId     String  @map("year_id") @db.Char(36)
+  fieldId    String  @map("field_id") @db.Char(36)
+  centerId   String  @map("center_id") @db.Char(36)
+  isActive   Boolean @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  year            Year             @relation(fields: [yearId], references: [id], onDelete: Cascade)
+  field           Field            @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  center          Center           @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  groups          Group[]
+  paymentSubjects PaymentSubject[]
+
+  @@map("subjects")
+}
+
+model Teacher {
+  id       String  @id @default(uuid()) @db.Char(36)
+  name     String  @db.VarChar(100)
+  email    String  @db.VarChar(255)
+  phone    String? @db.VarChar(20)
+  bio      String? @db.Text
+  centerId String  @map("center_id") @db.Char(36)
+  isActive Boolean @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  center   Center  @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  groups   Group[]
+
+  @@map("teachers")
+}
+
+model Group {
+  id           String  @id @default(uuid()) @db.Char(36)
+  name         String  @db.VarChar(100)
+  capacity     Int
+  classNumber  String  @map("class_number") @db.VarChar(50)
+  subjectId    String  @map("subject_id") @db.Char(36)
+  teacherId    String? @map("teacher_id") @db.Char(36)
+  centerId     String  @map("center_id") @db.Char(36)
+  isActive     Boolean @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher    Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  center     Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  schedules  GroupSchedule[]
+  enrollments StudentEnrollment[]
+  eventGroups EventGroup[]
+
+  @@map("groups")
+}
+
+model GroupSchedule {
+  id        String @id @default(uuid()) @db.Char(36)
+  groupId   String @map("group_id") @db.Char(36)
+  day       String @db.VarChar(20) // Monday, Tuesday, etc.
+  startTime String @map("start_time") @db.VarChar(5) // HH:MM format
+  endTime   String @map("end_time") @db.VarChar(5) // HH:MM format
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@map("group_schedules")
+}
+
+model Student {
+  id          String @id @default(uuid()) @db.Char(36)
+  firstName   String @map("first_name") @db.VarChar(100)
+  lastName    String @map("last_name") @db.VarChar(100)
+  sex         String @db.VarChar(1) // 'M' or 'F'
+  yearId      String @map("year_id") @db.Char(36)
+  fieldId     String @map("field_id") @db.Char(36)
+  phone       String @db.VarChar(20)
+  parentPhone String @map("parent_phone") @db.VarChar(20)
+  parentType  String @map("parent_type") @db.VarChar(20) // 'Mother', 'Father', 'Guardian'
+  tag         String @db.VarChar(10) @default("normal") // 'normal' or 'ss'
+  cni         String? @db.VarChar(50)
+  centerId    String @map("center_id") @db.Char(36)
+  isActive    Boolean @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  year             Year                @relation(fields: [yearId], references: [id], onDelete: Cascade)
+  field            Field               @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  center           Center              @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  enrollments      StudentEnrollment[]
+  eventEnrollments EventEnrollment[]
+  payments         Payment[]
+
+  @@map("students")
+}
+
+model StudentEnrollment {
+  id        String @id @default(uuid()) @db.Char(36)
+  studentId String @map("student_id") @db.Char(36)
+  groupId   String @map("group_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  group   Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendanceRecords AttendanceRecord[]
+
+  @@unique([studentId, groupId])
+  @@map("student_enrollments")
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+}
+
+model AttendanceRecord {
+  id           String           @id @default(uuid()) @db.Char(36)
+  enrollmentId String           @map("enrollment_id") @db.Char(36)
+  date         DateTime         @db.Date
+  status       AttendanceStatus
+  note         String?          @db.Text
+  recordedBy   String?          @map("recorded_by") @db.Char(36) // Teacher or admin who recorded it
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  enrollment StudentEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, date])
+  @@map("attendance_records")
+}
+
+model UserSession {
+  id           String   @id @default(uuid()) @db.Char(36)
+  userId       String   @map("user_id") @db.Char(36)
+  refreshToken String   @unique @map("refresh_token") @db.VarChar(255)
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+enum EventType {
+  Normal
+  TempAdditionalCourseDay
+}
+
+model Event {
+  id          String    @id @default(uuid()) @db.Char(36)
+  name        String    @db.VarChar(255)
+  type        EventType
+  fee         Decimal?  @db.Decimal(10, 2) // Only for Normal events
+  description String?   @db.Text
+  centerId    String    @map("center_id") @db.Char(36)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  center      Center           @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  schedules   EventSchedule[]
+  enrollments EventEnrollment[]
+  groups      EventGroup[]     // For temp additional course days
+
+  @@map("events")
+}
+
+model EventSchedule {
+  id        String   @id @default(uuid()) @db.Char(36)
+  eventId   String   @map("event_id") @db.Char(36)
+  date      DateTime @db.Date
+  startTime String   @map("start_time") @db.VarChar(5) // HH:MM format
+  endTime   String   @map("end_time") @db.VarChar(5)   // HH:MM format
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_schedules")
+}
+
+model EventEnrollment {
+  id        String   @id @default(uuid()) @db.Char(36)
+  eventId   String   @map("event_id") @db.Char(36)
+  studentId String   @map("student_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId])
+  @@map("event_enrollments")
+}
+
+model EventGroup {
+  id        String   @id @default(uuid()) @db.Char(36)
+  eventId   String   @map("event_id") @db.Char(36)
+  groupId   String   @map("group_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, groupId])
+  @@map("event_groups")
+}
+
+// Payment System Models
+enum PaymentStatus {
+  PAID
+  PARTIAL
+  PENDING
+  OVERDUE
+
+  @@map("payment_status")
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CHECK
+  OTHER
+
+  @@map("payment_method")
+}
+
+model Payment {
+  id          String         @id @default(uuid()) @db.Char(36)
+  studentId   String         @map("student_id") @db.Char(36)
+  month       String         @db.VarChar(7) // Format: YYYY-MM
+  amount      Decimal        @db.Decimal(10, 2)
+  paidAmount  Decimal?       @map("paid_amount") @db.Decimal(10, 2) @default(0)
+  status      PaymentStatus  @default(PENDING)
+  paymentDate DateTime?      @map("payment_date")
+  dueDate     DateTime       @map("due_date") @db.Date
+  method      PaymentMethod?
+  note        String?        @db.Text
+  recordedBy  String         @map("recorded_by") @db.Char(36)
+  centerId    String         @map("center_id") @db.Char(36)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  recordedByUser User             @relation("RecordedPayments", fields: [recordedBy], references: [id])
+  center         Center           @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  subjects       PaymentSubject[]
+
+  @@unique([studentId, month], name: "unique_student_month")
+  @@index([studentId, month], name: "idx_student_month")
+  @@index([status], name: "idx_status")
+  @@index([month], name: "idx_month")
+  @@index([centerId], name: "idx_center")
+  @@index([dueDate], name: "idx_due_date")
+  @@map("payments")
+}
+
+model PaymentSubject {
+  id        String   @id @default(uuid()) @db.Char(36)
+  paymentId String   @map("payment_id") @db.Char(36)
+  subjectId String   @map("subject_id") @db.Char(36)
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@index([paymentId], name: "idx_payment")
+  @@index([subjectId], name: "idx_subject")
+  @@map("payment_subjects")
+}
