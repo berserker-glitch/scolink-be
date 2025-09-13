@@ -17,6 +17,7 @@
     "db:seed": "ts-node database/seeds/index.ts",
     "db:seed:comprehensive": "npm run build && node dist/database/seeds/comprehensive-seed.js",
     "db:seed:full": "node scripts/run-comprehensive-seed.js",
+    "db:wipe": "node scripts/wipe-database.js",
     "db:studio": "prisma studio"
   },
   "dependencies": {
