@@ -1,7 +1,13 @@
 import { PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: 'mysql://scolink:yasserMBA123%23@iwcc4cokws4s4scwgg044ow0:3306/scolink_db'
+    }
+  }
+});
 
 // Realistic Moroccan names
 const maleFirstNames = [
@@ -149,25 +155,25 @@ const centersData = [
   { 
     name: 'Casablanca Educational Excellence Center', 
     location: '123 Hassan II Boulevard, Casablanca 20000, Morocco',
-    phone: '+212-522-123456',
+    phoneNumber: '+212-522-123456',
     email: 'info@casaexcellence.edu'
   },
   { 
     name: 'Rabat Academic Institute', 
     location: '456 Mohammed V Avenue, Rabat 10000, Morocco',
-    phone: '+212-537-654321',
+    phoneNumber: '+212-537-654321',
     email: 'contact@rabatacademic.edu'
   },
   { 
     name: 'Marrakech Learning Center', 
     location: '789 Jemaa el-Fnaa Street, Marrakech 40000, Morocco',
-    phone: '+212-524-987654',
+    phoneNumber: '+212-524-987654',
     email: 'info@marrakechlearn.edu'
   },
   { 
     name: 'Fez Heritage Academy', 
     location: '321 Bab Boujloud, Fez 30000, Morocco',
-    phone: '+212-535-321654',
+    phoneNumber: '+212-535-321654',
     email: 'admin@fezheritage.edu'
   }
 ];
@@ -226,7 +232,6 @@ async function main() {
       const center = await prisma.center.create({
         data: {
           ...centerData,
-          phoneNumber: centerData.phone,
           createdBy: superAdmin.id,
         },
       });
