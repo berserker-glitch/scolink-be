@@ -39,18 +39,6 @@ export class SubjectService {
       throw createError('Field not found or does not belong to this center', 404);
     }
 
-    // Check if subject with same name already exists in this field
-    const existingSubject = await prisma.subject.findFirst({
-      where: { 
-        name: subjectData.name,
-        fieldId: subjectData.fieldId,
-        centerId,
-      },
-    });
-
-    if (existingSubject) {
-      throw createError('Subject with this name already exists in this field', 409);
-    }
 
     const subject = await prisma.subject.create({
       data: {
@@ -226,22 +214,6 @@ export class SubjectService {
       }
     }
 
-    // Check if name is being changed and if it already exists in the target field
-    if (subjectData.name && subjectData.name !== subject.name) {
-      const targetFieldId = subjectData.fieldId || subject.fieldId;
-      const existingSubject = await prisma.subject.findFirst({
-        where: { 
-          name: subjectData.name,
-          fieldId: targetFieldId,
-          centerId,
-          id: { not: id },
-        },
-      });
-
-      if (existingSubject) {
-        throw createError('Subject with this name already exists in this field', 409);
-      }
-    }
 
     const updatedSubject = await prisma.subject.update({
       where: { id },

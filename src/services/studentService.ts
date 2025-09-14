@@ -35,22 +35,53 @@ export class StudentService {
     fieldId?: string,
     isActive?: boolean
   ): Promise<StudentListResponse> {
-    const skip = (page - 1) * limit;
+    try {
+      const skip = (page - 1) * limit;
 
-    const where: any = {
-      centerId,
-      ...(isActive !== undefined && { isActive }),
-      ...(yearId && { yearId }),
-      ...(fieldId && { fieldId }),
-      ...(search && {
-        OR: [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { phone: { contains: search } },
-          { parentPhone: { contains: search } },
-        ],
-      }),
-    };
+      const where: any = {
+        centerId,
+        ...(isActive !== undefined && { isActive }),
+        ...(yearId && { yearId }),
+        ...(fieldId && { fieldId }),
+        ...(search && (() => {
+          const searchTerms = search.trim().split(/\s+/).filter(term => term.length > 0);
+          
+          if (searchTerms.length === 1) {
+            // Single term search - search in all relevant fields
+            return {
+              OR: [
+                { firstName: { contains: searchTerms[0] } },
+                { lastName: { contains: searchTerms[0] } },
+                { phone: { contains: searchTerms[0] } },
+                { parentPhone: { contains: searchTerms[0] } },
+                { cni: { contains: searchTerms[0] } },
+                { tag: { contains: searchTerms[0] } },
+                // Search in related fields
+                { year: { name: { contains: searchTerms[0] } } },
+                { field: { name: { contains: searchTerms[0] } } },
+              ]
+            };
+          } else if (searchTerms.length > 1) {
+            // Multi-term search - each term must match at least one field
+            return {
+              AND: searchTerms.map(term => ({
+                OR: [
+                  { firstName: { contains: term } },
+                  { lastName: { contains: term } },
+                  { phone: { contains: term } },
+                  { parentPhone: { contains: term } },
+                  { cni: { contains: term } },
+                  { tag: { contains: term } },
+                  { year: { name: { contains: term } } },
+                  { field: { name: { contains: term } } },
+                ]
+              }))
+            };
+          }
+          
+          return {};
+        })()),
+      };
 
     const [students, total] = await Promise.all([
       prisma.student.findMany({
@@ -78,17 +109,21 @@ export class StudentService {
       prisma.student.count({ where }),
     ]);
 
-    const formattedStudents = students.map(student => this.formatStudentResponse(student));
+      const formattedStudents = students.map(student => this.formatStudentResponse(student));
 
-    return {
-      students: formattedStudents,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+      return {
+        students: formattedStudents,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      console.error('Error in StudentService.getStudents:', error);
+      throw error;
+    }
   }
 
   static async getStudentById(id: string, centerId: string): Promise<StudentResponse | null> {
@@ -273,6 +308,7 @@ export class StudentService {
         id: enrollment.id,
         groupId: enrollment.groupId,
         groupName: enrollment.group?.name,
+        subjectId: enrollment.group?.subject?.id,
         subjectName: enrollment.group?.subject?.name,
       })),
     };

@@ -41,18 +41,6 @@ export class GroupService {
       }
     }
 
-    // Check if group with same name already exists for this subject
-    const existingGroup = await prisma.group.findFirst({
-      where: { 
-        name: groupData.name,
-        subjectId: groupData.subjectId,
-        centerId,
-      },
-    });
-
-    if (existingGroup) {
-      throw createError('Group with this name already exists for this subject', 409);
-    }
 
     // Use transaction to create group with schedules
     const result = await prisma.$transaction(async (tx) => {
@@ -289,22 +277,6 @@ export class GroupService {
       }
     }
 
-    // Check if name is being changed and if it already exists
-    if (groupData.name && groupData.name !== group.name) {
-      const targetSubjectId = groupData.subjectId || group.subjectId;
-      const existingGroup = await prisma.group.findFirst({
-        where: { 
-          name: groupData.name,
-          subjectId: targetSubjectId,
-          centerId,
-          id: { not: id },
-        },
-      });
-
-      if (existingGroup) {
-        throw createError('Group with this name already exists for this subject', 409);
-      }
-    }
 
     // Use transaction to update group and schedules
     const result = await prisma.$transaction(async (tx) => {

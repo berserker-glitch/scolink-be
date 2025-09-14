@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient({
   datasources: {
     db: {
+      //url:'mysql://root:yasserMBA123%23@localhost:3306/scolink_db',
       url: 'mysql://scolink:yasserMBA123%23@iwcc4cokws4s4scwgg044ow0:3306/scolink_db'
     }
   }

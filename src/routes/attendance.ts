@@ -12,6 +12,7 @@ import {
   getGroupCurrentWeekAttendance,
   getGroupAttendanceByDate,
   checkGroupClassToday,
+  getGroupMonthlyAttendance,
 } from '../controllers/attendanceController';
 
 const router = Router();
@@ -29,6 +30,7 @@ router.get('/group/:groupId', getAttendanceByGroup);
 router.get('/group/:groupId/current-week', getGroupCurrentWeekAttendance);
 router.get('/group/:groupId/date/:date', getGroupAttendanceByDate);
 router.get('/group/:groupId/class-today', checkGroupClassToday);
+router.get('/group/:groupId/monthly/:year/:month', getGroupMonthlyAttendance);
 router.get('/student/:studentId', getAttendanceByStudent);
 router.get('/stats/:groupId', getAttendanceStats);
 

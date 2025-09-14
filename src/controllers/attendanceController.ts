@@ -297,3 +297,39 @@ export const getAttendanceStats = async (req: AuthRequest, res: Response): Promi
     });
   }
 };
+
+// Get monthly attendance data for a group
+export const getGroupMonthlyAttendance = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { groupId, year, month } = req.params;
+    const centerId = req.user?.centerId;
+
+    if (!centerId) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied. User must be associated with a center.',
+        errors: ['No center association'],
+      });
+      return;
+    }
+
+    const monthlyData = await AttendanceService.getGroupMonthlyAttendance(
+      groupId,
+      parseInt(year),
+      parseInt(month),
+      centerId
+    );
+
+    res.json({
+      success: true,
+      data: monthlyData,
+      message: 'Monthly attendance data retrieved successfully',
+    });
+  } catch (error) {
+    const errorInfo = handleError(error as Error);
+    res.status(errorInfo.statusCode).json({
+      success: false,
+      message: errorInfo.message,
+    });
+  }
+};

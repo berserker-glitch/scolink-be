@@ -575,4 +575,106 @@ export class AttendanceService {
       today,
     };
   }
+
+  /**
+   * Get monthly attendance data with class dates for a group
+   */
+  static async getGroupMonthlyAttendance(groupId: string, year: number, month: number, centerId: string): Promise<{
+    groupId: string;
+    groupName: string;
+    subject: string;
+    teacher: string;
+    classDays: string[];
+    classDatesList: string[];
+    students: Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      enrollmentId: string;
+    }>;
+    attendanceRecords: AttendanceResponse[];
+  }> {
+    // Get group details with schedules
+    const group = await prisma.group.findFirst({
+      where: { id: groupId, centerId },
+      include: {
+        schedules: true,
+        subject: {
+          select: { name: true }
+        },
+        teacher: {
+          select: { name: true }
+        },
+        enrollments: {
+          where: {
+            student: {
+              isActive: true,
+            },
+          },
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!group) {
+      throw createError('Group not found or does not belong to this center', 404);
+    }
+
+    const classDays = group.schedules.map(s => s.day);
+
+    // Generate class dates for the month
+    const classDatesList: string[] = [];
+    const daysInMonth = new Date(year, month, 0).getDate();
+    
+    const dayMap: { [key: string]: number } = {
+      'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+      'Thursday': 4, 'Friday': 5, 'Saturday': 6
+    };
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+      
+      if (classDays.includes(dayName)) {
+        classDatesList.push(date.toISOString().split('T')[0]);
+      }
+    }
+
+    // Get students enrolled in this group
+    const students = group.enrollments.map(enrollment => ({
+      id: enrollment.student.id,
+      firstName: enrollment.student.firstName,
+      lastName: enrollment.student.lastName,
+      enrollmentId: enrollment.id
+    }));
+
+    // Get attendance records for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+    
+    const attendanceRecords = await this.getAttendanceByGroup(
+      groupId,
+      startDate.toISOString().split('T')[0],
+      endDate.toISOString().split('T')[0]
+    );
+
+    return {
+      groupId: group.id,
+      groupName: group.name,
+      subject: group.subject.name,
+      teacher: group.teacher?.name || 'No teacher assigned',
+      classDays,
+      classDatesList,
+      students,
+      attendanceRecords
+    };
+  }
 }
