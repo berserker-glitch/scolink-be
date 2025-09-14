@@ -60,6 +60,41 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Debug routes endpoint
+app.get('/debug/routes', (req, res) => {
+  const routes: Array<{ path: string; methods: string[] }> = [];
+  
+  // Get all registered routes
+  function extractRoutes(stack: any[], prefix: string = '') {
+    stack.forEach((layer: any) => {
+      if (layer.route) {
+        // Terminal route
+        const path = prefix + layer.route.path;
+        const methods = Object.keys(layer.route.methods);
+        routes.push({ path, methods });
+      } else if (layer.name === 'router' && layer.handle.stack) {
+        // Router middleware, dive deeper
+        const routerPrefix = layer.regexp.source
+          .replace('\\/?', '')
+          .replace('(?=\\/|$)', '')
+          .replace(/[()\\^$]/g, '')
+          .replace(/\\\//g, '/');
+        extractRoutes(layer.handle.stack, routerPrefix);
+      }
+    });
+  }
+  
+  extractRoutes((app as any)._router.stack);
+  
+  res.status(200).json({
+    success: true,
+    message: 'Available routes',
+    routes: routes.sort((a, b) => a.path.localeCompare(b.path)),
+    environment: env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // API routes
 app.use(routes);
 
