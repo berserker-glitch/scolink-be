@@ -202,6 +202,14 @@ function generateCNI(): string {
 async function main() {
   console.log('🌱 Starting comprehensive database seeding...');
 
+  // Create shorter email mappings for centers
+  const centerEmailMappings: { [key: string]: string } = {
+    'Casablanca Educational Excellence Center': 'casa-excellence',
+    'Rabat Academic Institute': 'rabat-academic',
+    'Marrakech Learning Center': 'marrakech-learn',
+    'Fez Heritage Academy': 'fez-heritage'
+  };
+
   try {
     // Check if super admin exists
     const existingSuperAdmin = await prisma.user.findUnique({
@@ -229,6 +237,15 @@ async function main() {
     // Create Centers
     console.log('🏢 Creating centers...');
     const centers = [];
+    
+    // Create shorter email mappings for centers
+    const centerEmailMappings: { [key: string]: string } = {
+      'Casablanca Educational Excellence Center': 'casa-excellence',
+      'Rabat Academic Institute': 'rabat-academic',
+      'Marrakech Learning Center': 'marrakech-learn',
+      'Fez Heritage Academy': 'fez-heritage'
+    };
+    
     for (const centerData of centersData) {
       const center = await prisma.center.create({
         data: {
@@ -238,19 +255,30 @@ async function main() {
       });
       centers.push(center);
 
-      // Create center admin for each center
+      // Create center admin for each center with shorter email
       const centerAdminPassword = await bcrypt.hash('Admin123!', 12);
-      await prisma.user.create({
-        data: {
-          email: `admin@${center.name.toLowerCase().replace(/\s+/g, '')}.edu`,
-          passwordHash: centerAdminPassword,
-          fullName: `${center.name} Administrator`,
-          phoneNumber: generatePhoneNumber(),
-          role: UserRole.center_admin,
-          centerId: center.id,
-          isActive: true,
-        },
+      const emailPrefix = centerEmailMappings[center.name] || center.name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
+      
+      // Check if admin already exists
+      const existingAdmin = await prisma.user.findUnique({
+        where: { email: `admin@${emailPrefix}.edu` },
       });
+
+      if (!existingAdmin) {
+        await prisma.user.create({
+          data: {
+            email: `admin@${emailPrefix}.edu`,
+            passwordHash: centerAdminPassword,
+            fullName: `${center.name} Administrator`,
+            phoneNumber: generatePhoneNumber(),
+            role: UserRole.center_admin,
+            centerId: center.id,
+            isActive: true,
+          },
+        });
+      } else {
+        console.log(`ℹ️ Admin already exists for ${center.name}`);
+      }
     }
     console.log(`✅ Created ${centers.length} centers with admins`);
 
@@ -312,11 +340,13 @@ async function main() {
 
       // Create Teachers
       const createdTeachers = [];
+      const emailPrefix = centerEmailMappings[center.name] || center.name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
+      
       for (const teacherData of teachersData) {
         const teacher = await prisma.teacher.create({
           data: {
             name: teacherData.name,
-            email: teacherData.email.replace('@center.edu', `@${center.name.toLowerCase().replace(/\s+/g, '')}.edu`),
+            email: teacherData.email.replace('@center.edu', `@${emailPrefix}.edu`),
             phone: generatePhoneNumber(),
             bio: teacherData.bio,
             centerId: center.id,
