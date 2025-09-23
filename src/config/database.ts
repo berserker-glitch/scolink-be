@@ -8,14 +8,9 @@ declare global {
   var __prisma: PrismaClient | undefined;
 }
 
-// Get the DATABASE_URL from environment variables
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  console.error('❌ DATABASE_URL environment variable is not set!');
-  console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('DATABASE')));
-  throw new Error('DATABASE_URL environment variable is required');
-}
+// Hard coded DATABASE_URL for MySQL
+//const databaseUrl = 'mysql://root:yasserMBA123%23@localhost:3306/scolink_db';
+const databaseUrl = 'mysql://scolink:yasserMBA123%23@iwcc4cokws4s4scwgg044ow0:3306/scolink_db';
 
 console.log('✅ Using DATABASE_URL:', databaseUrl.replace(/:[^:@]*@/, ':***@')); // Log with masked password
 
