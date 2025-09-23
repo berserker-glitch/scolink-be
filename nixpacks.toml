@@ -1,5 +1,9 @@
 [variables]
 NODE_VERSION = "20"
+NODE_ENV = "production"
 
 [phases.setup]
 nixPkgs = ["nodejs_20", "bun"]
+
+[start]
+cmd = "npm run start"
