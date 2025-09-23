@@ -8,7 +8,7 @@ generator client {
 datasource db {
   provider = "mysql"
   
-  url      = "mysql://root:yasserMBA123%23@localhost:3306/scolink_db"
+  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
