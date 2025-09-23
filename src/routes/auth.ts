@@ -10,6 +10,7 @@ router.use(authLimiter);
 
 // Authentication routes
 router.post('/login', AuthController.login);
+router.post('/signup', AuthController.signup);
 router.post('/refresh', AuthController.refreshToken);
 router.get('/profile', authenticate, AuthController.getProfile);
 router.post('/logout', AuthController.logout);

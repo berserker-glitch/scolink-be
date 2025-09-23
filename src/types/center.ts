@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CenterPlan } from '@prisma/client';
 
 // Center Creation Schema
 export const createCenterSchema = z.object({
@@ -27,6 +28,9 @@ export interface CenterResponse {
   location: string;
   phoneNumber?: string;
   email?: string;
+  plan: CenterPlan;
+  planExpiresAt?: Date;
+  planUpgradedAt?: Date;
   isActive: boolean;
   createdBy: string;
   createdAt: Date;

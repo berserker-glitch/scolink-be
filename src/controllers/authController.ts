@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthService } from '@/services/authService';
 import { validate } from '@/middleware/validation';
-import { loginSchema, refreshTokenSchema, AuthRequest } from '@/types/auth';
+import { loginSchema, refreshTokenSchema, signupSchema, AuthRequest } from '@/types/auth';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 
@@ -33,6 +33,38 @@ export class AuthController {
           success: false,
           message: 'Internal server error',
           errors: ['Login failed'],
+        });
+      }
+    },
+  ];
+
+  static signup = [
+    validate(signupSchema),
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        const result = await AuthService.signup(req.body);
+        
+        res.status(201).json({
+          success: true,
+          data: result,
+          message: 'Registration successful',
+        });
+      } catch (error) {
+        logger.error('Signup failed', { error: error instanceof Error ? error.message : 'Unknown error' });
+        
+        if (error instanceof Error && 'statusCode' in error) {
+          res.status((error as any).statusCode).json({
+            success: false,
+            message: error.message,
+            errors: [error.message],
+          });
+          return;
+        }
+        
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error',
+          errors: ['Registration failed'],
         });
       }
     },

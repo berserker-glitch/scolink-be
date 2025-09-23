@@ -250,6 +250,8 @@ async function main() {
       const center = await prisma.center.create({
         data: {
           ...centerData,
+          plan: 'lifetime', // Seeded centers get lifetime plan
+          planUpgradedAt: new Date(),
           createdBy: superAdmin.id,
         },
       });

@@ -18,13 +18,15 @@ export class CenterService {
       throw createError('Center with this name already exists', 409);
     }
 
-    // Create center
+    // Create center with lifetime plan (created by super admin)
     const center = await prisma.center.create({
       data: {
         name,
         location,
         phoneNumber,
         email,
+        plan: 'lifetime', // Super admin created centers get lifetime plan
+        planUpgradedAt: new Date(),
         createdBy,
       },
     });
@@ -37,6 +39,9 @@ export class CenterService {
       location: center.location,
       phoneNumber: center.phoneNumber || undefined,
       email: center.email || undefined,
+      plan: center.plan,
+      planExpiresAt: center.planExpiresAt || undefined,
+      planUpgradedAt: center.planUpgradedAt || undefined,
       isActive: center.isActive,
       createdBy: center.createdBy,
       createdAt: center.createdAt,
@@ -64,6 +69,9 @@ export class CenterService {
       location: center.location,
       phoneNumber: center.phoneNumber || undefined,
       email: center.email || undefined,
+      plan: center.plan,
+      planExpiresAt: center.planExpiresAt || undefined,
+      planUpgradedAt: center.planUpgradedAt || undefined,
       isActive: center.isActive,
       createdBy: center.createdBy,
       createdAt: center.createdAt,
@@ -99,6 +107,9 @@ export class CenterService {
       location: center.location,
       phoneNumber: center.phoneNumber || undefined,
       email: center.email || undefined,
+      plan: center.plan,
+      planExpiresAt: center.planExpiresAt || undefined,
+      planUpgradedAt: center.planUpgradedAt || undefined,
       isActive: center.isActive,
       createdBy: center.createdBy,
       createdAt: center.createdAt,
@@ -143,6 +154,9 @@ export class CenterService {
       location: updatedCenter.location,
       phoneNumber: updatedCenter.phoneNumber || undefined,
       email: updatedCenter.email || undefined,
+      plan: updatedCenter.plan,
+      planExpiresAt: updatedCenter.planExpiresAt || undefined,
+      planUpgradedAt: updatedCenter.planUpgradedAt || undefined,
       isActive: updatedCenter.isActive,
       createdBy: updatedCenter.createdBy,
       createdAt: updatedCenter.createdAt,
@@ -251,6 +265,9 @@ export class CenterService {
       location: result.location,
       phoneNumber: result.phoneNumber || undefined,
       email: result.email || undefined,
+      plan: result.plan,
+      planExpiresAt: result.planExpiresAt || undefined,
+      planUpgradedAt: result.planUpgradedAt || undefined,
       isActive: result.isActive,
       createdBy: result.createdBy,
       createdAt: result.createdAt,
@@ -300,6 +317,9 @@ export class CenterService {
       location: result.location,
       phoneNumber: result.phoneNumber || undefined,
       email: result.email || undefined,
+      plan: result.plan,
+      planExpiresAt: result.planExpiresAt || undefined,
+      planUpgradedAt: result.planUpgradedAt || undefined,
       isActive: result.isActive,
       createdBy: result.createdBy,
       createdAt: result.createdAt,
@@ -351,6 +371,9 @@ export class CenterService {
         location: center.location,
         phoneNumber: center.phoneNumber || undefined,
         email: center.email || undefined,
+        plan: center.plan,
+        planExpiresAt: center.planExpiresAt || undefined,
+        planUpgradedAt: center.planUpgradedAt || undefined,
         isActive: center.isActive,
         createdBy: center.createdBy,
         createdAt: center.createdAt,

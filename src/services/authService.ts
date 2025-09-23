@@ -4,7 +4,7 @@ import { hashPassword, verifyPassword } from '@/utils/password';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '@/utils/jwt';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
-import { LoginInput, AuthResponse } from '@/types/auth';
+import { LoginInput, AuthResponse, SignupInput } from '@/types/auth';
 
 export class AuthService {
   static async login(credentials: LoginInput): Promise<AuthResponse> {
@@ -58,6 +58,96 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  static async signup(signupData: SignupInput): Promise<{ center: any; admin: any }> {
+    const { center: centerData, admin: adminData } = signupData;
+
+    // Check if admin email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: adminData.email },
+    });
+
+    if (existingUser) {
+      throw createError('User with this email already exists', 409);
+    }
+
+    // Start transaction to create center and admin together
+    const result = await prisma.$transaction(async (prisma) => {
+      // First, create a temporary super admin ID for center creation
+      // We need to get the super admin user to assign as creator
+      const superAdmin = await prisma.user.findFirst({
+        where: { role: UserRole.super_admin },
+      });
+
+      if (!superAdmin) {
+        throw createError('System error: Super admin not found', 500);
+      }
+
+       // Create the center with basic plan for self-signup
+       const center = await prisma.center.create({
+         data: {
+           name: centerData.name,
+           location: centerData.location,
+           phoneNumber: centerData.phoneNumber,
+           email: centerData.email,
+           plan: 'basic', // Self-signup gets basic plan
+           planUpgradedAt: new Date(),
+           createdBy: superAdmin.id, // Use super admin as creator
+         },
+       });
+
+      // Hash the admin password
+      const passwordHash = await hashPassword(adminData.password);
+
+      // Create the admin user
+      const admin = await prisma.user.create({
+        data: {
+          email: adminData.email,
+          passwordHash,
+          fullName: adminData.fullName,
+          phoneNumber: adminData.phoneNumber,
+          role: UserRole.center_admin,
+          centerId: center.id,
+        },
+      });
+
+      logger.info('Center and admin created successfully', {
+        centerId: center.id,
+        adminId: admin.id,
+        centerName: center.name,
+        adminEmail: admin.email,
+      });
+
+      return {
+         center: {
+           id: center.id,
+           name: center.name,
+           location: center.location,
+           phoneNumber: center.phoneNumber,
+           email: center.email,
+           plan: center.plan,
+           planExpiresAt: center.planExpiresAt,
+           planUpgradedAt: center.planUpgradedAt,
+           isActive: center.isActive,
+           createdAt: center.createdAt,
+           updatedAt: center.updatedAt,
+         },
+        admin: {
+          id: admin.id,
+          email: admin.email,
+          fullName: admin.fullName,
+          phoneNumber: admin.phoneNumber,
+          role: admin.role,
+          centerId: admin.centerId,
+          isActive: admin.isActive,
+          createdAt: admin.createdAt,
+          updatedAt: admin.updatedAt,
+        },
+      };
+    });
+
+    return result;
   }
 
   static async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {

@@ -37,13 +37,15 @@ async function main() {
       email: superAdmin.email,
     });
 
-    // Create sample center for testing
+    // Create sample center for testing with lifetime plan
     const sampleCenter = await prisma.center.create({
       data: {
         name: 'Sample Educational Center',
         location: '123 Education Street, Learning City, LC 12345',
         phoneNumber: '+1-555-0123',
         email: 'info@samplecenter.edu',
+        plan: 'lifetime', // Seeded centers get lifetime plan
+        planUpgradedAt: new Date(),
         createdBy: superAdmin.id,
       },
     });

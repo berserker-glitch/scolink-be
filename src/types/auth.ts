@@ -18,6 +18,24 @@ export const registerSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 
+// Signup Schema for creating center and admin together
+export const signupSchema = z.object({
+  center: z.object({
+    name: z.string().min(2, 'Center name must be at least 2 characters'),
+    location: z.string().min(5, 'Location must be at least 5 characters'),
+    phoneNumber: z.string().min(1, 'Phone number is required'),
+    email: z.string().email('Invalid email format'),
+  }),
+  admin: z.object({
+    email: z.string().email('Invalid email format'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+    phoneNumber: z.string().min(1, 'Phone number is required'),
+  }),
+});
+
+export type SignupInput = z.infer<typeof signupSchema>;
+
 // Refresh Token Schema
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
