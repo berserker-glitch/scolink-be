@@ -2,11 +2,11 @@
   "name": "scolink-backend",
   "version": "1.0.0",
   "description": "Backend API for Scolink Application",
-  "main": "dist/index.js",
+  "main": "start.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "tsc && tsc-alias && prisma generate",
-    "start": "NODE_ENV=production node dist/index.js",
+    "build": "tsc && prisma generate",
+    "start": "node start.js",
     "start:compiled": "node -r tsconfig-paths/register dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -31,6 +31,7 @@
     "html2canvas": "^1.4.1",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.2",
+    "tsconfig-paths": "^4.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -50,7 +51,6 @@
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
     "tsc-alias": "^1.8.8",
-    "tsconfig-paths": "^4.2.0",
     "ttypescript": "^1.5.15",
     "typescript": "^5.2.2"
   },
