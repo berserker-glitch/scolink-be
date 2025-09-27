@@ -51,25 +51,34 @@ model Center {
   location        String     @db.Text
   phoneNumber     String?    @map("phone_number") @db.VarChar(20)
   email           String?    @db.VarChar(255)
-  plan            CenterPlan @default(basic)
+  plan            CenterPlan?
   planExpiresAt   DateTime?  @map("plan_expires_at")
   planUpgradedAt  DateTime?  @map("plan_upgraded_at")
+  
+  // Paddle subscription fields
+  paddleSubscriptionId String? @map("paddle_subscription_id") @db.VarChar(255)
+  paddleCustomerId    String? @map("paddle_customer_id") @db.VarChar(255)
+  paddlePriceId       String? @map("paddle_price_id") @db.VarChar(255)
+  subscriptionStatus  String? @map("subscription_status") @db.VarChar(50) // active, canceled, paused, past_due, trialing
+  nextBillingDate     DateTime? @map("next_billing_date")
+  
   isActive        Boolean    @default(true) @map("is_active")
   createdBy       String     @map("created_by") @db.Char(36)
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  creator  User      @relation("CenterCreator", fields: [createdBy], references: [id])
-  admins   User[]
-  years    Year[]
-  fields   Field[]
-  subjects Subject[]
-  teachers Teacher[]
-  groups   Group[]
-  students Student[]
-  events   Event[]
-  payments Payment[]
+  creator         User                @relation("CenterCreator", fields: [createdBy], references: [id])
+  admins          User[]
+  years           Year[]
+  fields          Field[]
+  subjects        Subject[]
+  teachers        Teacher[]
+  groups          Group[]
+  students        Student[]
+  events          Event[]
+  payments        Payment[]
+  subscriptions   PaddleSubscription[]
 
   @@map("centers")
 }
@@ -401,4 +410,76 @@ model PaymentSubject {
   @@index([paymentId], name: "idx_payment")
   @@index([subjectId], name: "idx_subject")
   @@map("payment_subjects")
+}
+
+// Paddle Subscription Management Models
+enum PaddleSubscriptionStatus {
+  active
+  canceled
+  paused
+  past_due
+  trialing
+  
+  @@map("paddle_subscription_status")
+}
+
+model PaddleSubscription {
+  id                  String                   @id @default(uuid()) @db.Char(36)
+  centerId            String                   @map("center_id") @db.Char(36)
+  paddleSubscriptionId String                  @unique @map("paddle_subscription_id") @db.VarChar(255)
+  paddleCustomerId    String                   @map("paddle_customer_id") @db.VarChar(255)
+  paddlePriceId       String                   @map("paddle_price_id") @db.VarChar(255)
+  status              PaddleSubscriptionStatus
+  currentPeriodStart  DateTime                 @map("current_period_start")
+  currentPeriodEnd    DateTime                 @map("current_period_end")
+  cancelAtPeriodEnd   Boolean                  @default(false) @map("cancel_at_period_end")
+  canceledAt          DateTime?                @map("canceled_at")
+  trialStart          DateTime?                @map("trial_start")
+  trialEnd            DateTime?                @map("trial_end")
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+  
+  // Relations
+  center      Center              @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  transactions PaddleTransaction[]
+  
+  @@index([paddleSubscriptionId], name: "idx_paddle_subscription")
+  @@index([centerId], name: "idx_center")
+  @@index([status], name: "idx_status")
+  @@map("paddle_subscriptions")
+}
+
+enum PaddleTransactionStatus {
+  billed
+  paid
+  completed
+  canceled
+  past_due
+  
+  @@map("paddle_transaction_status")
+}
+
+model PaddleTransaction {
+  id                    String                    @id @default(uuid()) @db.Char(36)
+  subscriptionId        String?                   @map("subscription_id") @db.Char(36)
+  paddleTransactionId   String                    @unique @map("paddle_transaction_id") @db.VarChar(255)
+  paddleSubscriptionId  String?                   @map("paddle_subscription_id") @db.VarChar(255)
+  paddleCustomerId      String                    @map("paddle_customer_id") @db.VarChar(255)
+  status                PaddleTransactionStatus
+  amount                Decimal                   @db.Decimal(10, 2)
+  currency              String                    @db.VarChar(3)
+  billedAt              DateTime?                 @map("billed_at")
+  paidAt                DateTime?                 @map("paid_at")
+  receiptUrl            String?                   @map("receipt_url") @db.Text
+  invoiceNumber         String?                   @map("invoice_number") @db.VarChar(255)
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  
+  // Relations
+  subscription PaddleSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  
+  @@index([paddleTransactionId], name: "idx_paddle_transaction")
+  @@index([subscriptionId], name: "idx_subscription")
+  @@index([status], name: "idx_status")
+  @@map("paddle_transactions")
 }

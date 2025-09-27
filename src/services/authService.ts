@@ -84,15 +84,14 @@ export class AuthService {
         throw createError('System error: Super admin not found', 500);
       }
 
-       // Create the center with basic plan for self-signup
+       // Create the center without any plan (requires plan selection)
        const center = await prisma.center.create({
          data: {
            name: centerData.name,
            location: centerData.location,
            phoneNumber: centerData.phoneNumber,
            email: centerData.email,
-           plan: 'basic', // Self-signup gets basic plan
-           planUpgradedAt: new Date(),
+           // No plan assigned initially - user must choose
            createdBy: superAdmin.id, // Use super admin as creator
          },
        });

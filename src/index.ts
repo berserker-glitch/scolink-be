@@ -17,6 +17,9 @@ import env from './config/env';
 
 const app = express();
 
+// Trust proxy for ngrok and other reverse proxies /remove this if you are not using ngrok
+app.set('trust proxy', true);
+
 // Create logs directory if it doesn't exist
 const logsDir = join(process.cwd(), 'logs');
 try {
@@ -32,10 +35,13 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting
-app.use(apiLimiter);
+// Rate limiting (exclude webhooks from rate limiting)
+app.use('/api', apiLimiter);
 
-// Body parsing middleware
+// Webhook routes BEFORE body parsing (need raw body)
+app.use('/webhooks', require('./routes/webhooks').default);
+
+// Body parsing middleware for non-webhook routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

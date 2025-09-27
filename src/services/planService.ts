@@ -123,6 +123,92 @@ export class PlanService {
   }
 
   /**
+   * Update a center's plan (for plan selection)
+   */
+  static async updateCenterPlan(centerId: string, plan: CenterPlan): Promise<any> {
+    const center = await prisma.center.findUnique({
+      where: { id: centerId }
+    });
+
+    if (!center) {
+      throw createError('Center not found', 404);
+    }
+
+    // Calculate expiry date for paid plans
+    let planExpiresAt: Date | null = null;
+    let subscriptionStatus: string | null = null;
+
+    if (plan === 'pro' || plan === 'premium') {
+      // For paid plans without Paddle subscription, set a temporary expiry
+      planExpiresAt = new Date();
+      planExpiresAt.setDate(planExpiresAt.getDate() + 7); // 7 days trial
+      subscriptionStatus = 'trial';
+    } else if (plan === 'basic') {
+      // Basic plan doesn't expire
+      subscriptionStatus = null;
+    }
+
+    const updatedCenter = await prisma.center.update({
+      where: { id: centerId },
+      data: {
+        plan,
+        planExpiresAt,
+        planUpgradedAt: new Date(), // Mark when plan was selected
+        subscriptionStatus
+      }
+    });
+
+    logger.info('Center plan updated', {
+      centerId,
+      plan,
+      planExpiresAt,
+      subscriptionStatus
+    });
+
+    return {
+      id: updatedCenter.id,
+      name: updatedCenter.name,
+      plan: updatedCenter.plan,
+      planExpiresAt: updatedCenter.planExpiresAt,
+      planUpgradedAt: updatedCenter.planUpgradedAt,
+      subscriptionStatus: updatedCenter.subscriptionStatus
+    };
+  }
+
+  /**
+   * Get center plan status
+   */
+  static async getCenterPlanStatus(centerId: string): Promise<{
+    plan: string | null;
+    planExpiresAt: string | null;
+    subscriptionStatus: string | null;
+  }> {
+    logger.info('Looking up center for plan status', { centerId });
+    
+    const center = await prisma.center.findUnique({
+      where: { id: centerId }
+    });
+
+    if (!center) {
+      logger.error('Center not found for plan status', { centerId });
+      throw createError('Center not found', 404);
+    }
+
+    logger.info('Found center for plan status', {
+      centerId,
+      centerName: center.name,
+      plan: center.plan,
+      planUpgradedAt: center.planUpgradedAt
+    });
+
+    return {
+      plan: center.plan,
+      planExpiresAt: center.planExpiresAt?.toISOString() || null,
+      subscriptionStatus: center.subscriptionStatus
+    };
+  }
+
+  /**
    * Downgrade expired paid plans to basic
    */
   static async handleExpiredPlans(): Promise<void> {
@@ -198,7 +284,7 @@ export class PlanService {
     }
 
     // Check if plan is active
-    if (!this.isPlanActive(center.plan, center.planExpiresAt)) {
+    if (!center.plan || !this.isPlanActive(center.plan, center.planExpiresAt)) {
       // If plan is expired, downgrade to basic
       await prisma.center.update({
         where: { id: centerId },
@@ -211,7 +297,7 @@ export class PlanService {
       center.plan = 'basic';
     }
 
-    const limits = this.getPlanLimits(center.plan);
+    const limits = this.getPlanLimits(center.plan || 'basic');
     const maxLimit = limits[`max${resource.charAt(0).toUpperCase() + resource.slice(1)}` as keyof typeof limits] as number;
 
     // -1 means unlimited

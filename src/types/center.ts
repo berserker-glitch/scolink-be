@@ -28,7 +28,7 @@ export interface CenterResponse {
   location: string;
   phoneNumber?: string;
   email?: string;
-  plan: CenterPlan;
+  plan: CenterPlan | null;
   planExpiresAt?: Date;
   planUpgradedAt?: Date;
   isActive: boolean;
