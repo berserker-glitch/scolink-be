@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { EventController } from '../controllers/eventController';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireStaffAccess } from '../middleware/auth';
+import { requireEventsAccess } from '../middleware/planRestrictions';
 import { validate } from '../middleware/validation';
 import { 
   createEventSchema, 
@@ -11,8 +12,9 @@ import {
 
 const router = Router();
 
-// All event routes require authentication and admin privileges
-router.use(authenticate, requireAdmin);
+// All event routes require authentication, staff access, and events access
+router.use(authenticate, requireStaffAccess);
+router.use(requireEventsAccess);
 
 // Event CRUD routes
 router.post('/', validate(createEventSchema), EventController.createEvent);

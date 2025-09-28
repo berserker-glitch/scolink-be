@@ -259,4 +259,47 @@ export class TeacherController {
       });
     }
   };
+
+  static activateTeacherAccount = [
+    async (req: AuthRequest, res: Response): Promise<void> => {
+      try {
+        const { teacherId } = req.params;
+        const centerId = req.user?.centerId;
+
+        if (!centerId) {
+          res.status(403).json({
+            success: false,
+            message: 'Access denied. User must be associated with a center.',
+            errors: ['No center association'],
+          });
+          return;
+        }
+
+        const result = await TeacherService.activateTeacherAccount(teacherId, centerId);
+
+        res.status(200).json({
+          success: true,
+          data: result,
+          message: 'Teacher account activated successfully',
+        });
+      } catch (error) {
+        logger.error('Activate teacher account failed', { error: error instanceof Error ? error.message : 'Unknown error' });
+
+        if (error instanceof Error && 'statusCode' in error) {
+          res.status((error as any).statusCode).json({
+            success: false,
+            message: error.message,
+            errors: [error.message],
+          });
+          return;
+        }
+
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error',
+          errors: ['Activate teacher account failed'],
+        });
+      }
+    },
+  ];
 }

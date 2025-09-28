@@ -14,6 +14,8 @@ datasource db {
 enum UserRole {
   super_admin
   center_admin
+  staff
+  teacher
   user
 }
 

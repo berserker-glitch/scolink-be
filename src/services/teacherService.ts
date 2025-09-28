@@ -3,6 +3,9 @@ import { CreateTeacherInput, UpdateTeacherInput, TeacherResponse, TeacherWithGro
 import { PaginationQuery } from '@/types/common';
 import { createError } from '@/utils/errorHandler';
 import { logger } from '@/utils/logger';
+import bcrypt from 'bcrypt';
+import { emailService } from '@/utils/email';
+import { PlanService } from '@/services/planService';
 
 export class TeacherService {
   static async createTeacher(centerId: string, teacherData: CreateTeacherInput): Promise<TeacherResponse> {
@@ -324,5 +327,66 @@ export class TeacherService {
       limit,
       totalPages,
     };
+  }
+
+  static async activateTeacherAccount(teacherId: string, centerId: string): Promise<{ password: string }> {
+    // Check if teacher exists and belongs to the center
+    const teacher = await prisma.teacher.findFirst({
+      where: {
+        id: teacherId,
+        centerId,
+      },
+    });
+
+    if (!teacher) {
+      throw createError('Teacher not found', 404);
+    }
+
+    // Check if center has premium or lifetime plan (required for teacher accounts)
+    const centerPlan = await PlanService.getCenterPlanStatus(centerId);
+    if (centerPlan.plan !== 'premium' && centerPlan.plan !== 'lifetime') {
+      throw createError('Teacher accounts are only available for Premium and Lifetime plans', 403);
+    }
+
+    // Check if teacher already has a user account
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: teacher.email,
+        centerId,
+      },
+    });
+
+    if (existingUser) {
+      throw createError('Teacher already has an active account', 409);
+    }
+
+    // Generate a random password
+    const password = Math.random().toString(36).slice(-12) + 'A1!';
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user account
+    await prisma.user.create({
+      data: {
+        email: teacher.email,
+        passwordHash: hashedPassword,
+        fullName: teacher.name,
+        role: 'teacher' as any,
+        centerId,
+        phoneNumber: teacher.phone,
+        isActive: true,
+      },
+    });
+
+    // Send welcome email with login credentials
+    try {
+      await emailService.sendTeacherWelcomeEmail(teacher.email, teacher.name, password);
+    } catch (emailError) {
+      logger.error('Failed to send teacher welcome email', { teacherId, email: teacher.email, error: emailError });
+      // Don't fail the activation if email fails
+    }
+
+    logger.info('Teacher account activated successfully', { teacherId, email: teacher.email });
+
+    return { password };
   }
 }

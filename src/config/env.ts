@@ -24,6 +24,14 @@ const envSchema = z.object({
   // Super Admin
   SUPER_ADMIN_EMAIL: z.string().email().default('admin@admin.com'),
   SUPER_ADMIN_PASSWORD: z.string().min(8).default('D8fd5D5694'),
+
+  // Email Service
+  SMTP_HOST: z.string().min(1, 'SMTP_HOST is required'),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().min(1, 'SMTP_USER is required'),
+  SMTP_PASS: z.string().min(1, 'SMTP_PASS is required'),
+  EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email address'),
+  SMTP_SECURE: z.coerce.boolean().default(false),
 });
 
 const env = envSchema.parse(process.env);

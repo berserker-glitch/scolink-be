@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import { SubjectController } from '@/controllers/subjectController';
-import { authenticate, requireAdmin } from '@/middleware/auth';
+import { authenticate, requireStaffAccess } from '@/middleware/auth';
 
 const router = Router();
 
 // Subject routes
-router.post('/', authenticate, requireAdmin, SubjectController.createSubject);
-router.get('/', authenticate, requireAdmin, SubjectController.getSubjects);
-router.get('/:id', authenticate, requireAdmin, SubjectController.getSubjectById);
-router.get('/:id/groups', authenticate, requireAdmin, SubjectController.getSubjectWithGroups);
-router.get('/field/:fieldId', authenticate, requireAdmin, SubjectController.getSubjectsByField);
-router.put('/:id', authenticate, requireAdmin, SubjectController.updateSubject);
-router.delete('/:id', authenticate, requireAdmin, SubjectController.deleteSubject);
+router.post('/', authenticate, requireStaffAccess, SubjectController.createSubject);
+router.get('/', authenticate, requireStaffAccess, SubjectController.getSubjects);
+router.get('/:id', authenticate, requireStaffAccess, SubjectController.getSubjectById);
+router.get('/:id/groups', authenticate, requireStaffAccess, SubjectController.getSubjectWithGroups);
+router.get('/field/:fieldId', authenticate, requireStaffAccess, SubjectController.getSubjectsByField);
+router.put('/:id', authenticate, requireStaffAccess, SubjectController.updateSubject);
+router.delete('/:id', authenticate, requireStaffAccess, SubjectController.deleteSubject);
 
 export default router;

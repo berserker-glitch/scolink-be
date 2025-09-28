@@ -34,33 +34,42 @@ export class PlanService {
   static getPlanLimits(plan: CenterPlan) {
     const planLimits = {
       basic: {
-        maxStudents: 50,
+        maxStudents: 100,
         maxTeachers: 5,
         maxGroups: 10,
         maxSubjects: 15,
         hasAdvancedReports: false,
         hasApiAccess: false,
         hasCustomBranding: false,
+        hasAttendance: false,
+        hasEvents: false,
+        hasStaffManagement: false,
         priority: 1
       },
       pro: {
-        maxStudents: 200,
+        maxStudents: 1500,
         maxTeachers: 20,
         maxGroups: 50,
         maxSubjects: 50,
         hasAdvancedReports: true,
         hasApiAccess: false,
         hasCustomBranding: false,
+        hasAttendance: true,
+        hasEvents: true,
+        hasStaffManagement: true,
         priority: 2
       },
       premium: {
-        maxStudents: 500,
+        maxStudents: -1, // Unlimited
         maxTeachers: 50,
         maxGroups: 100,
         maxSubjects: 100,
         hasAdvancedReports: true,
         hasApiAccess: true,
         hasCustomBranding: true,
+        hasAttendance: true,
+        hasEvents: true,
+        hasStaffManagement: true,
         priority: 3
       },
       lifetime: {
@@ -71,6 +80,9 @@ export class PlanService {
         hasAdvancedReports: true,
         hasApiAccess: true,
         hasCustomBranding: true,
+        hasAttendance: true,
+        hasEvents: true,
+        hasStaffManagement: true,
         priority: 4
       }
     };

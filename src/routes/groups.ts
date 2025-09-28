@@ -1,17 +1,17 @@
 import { Router } from 'express';
 import { GroupController } from '@/controllers/groupController';
-import { authenticate, requireAdmin } from '@/middleware/auth';
+import { authenticate, requireStaffAccess } from '@/middleware/auth';
 
 const router = Router();
 
 // Group routes
-router.post('/', authenticate, requireAdmin, GroupController.createGroup);
-router.get('/', authenticate, requireAdmin, GroupController.getGroups);
-router.get('/:id', authenticate, requireAdmin, GroupController.getGroupById);
-router.get('/:id/details', authenticate, requireAdmin, GroupController.getGroupWithDetails);
-router.get('/:id/students', authenticate, requireAdmin, GroupController.getGroupStudents);
-router.get('/subject/:subjectId', authenticate, requireAdmin, GroupController.getGroupsBySubject);
-router.put('/:id', authenticate, requireAdmin, GroupController.updateGroup);
-router.delete('/:id', authenticate, requireAdmin, GroupController.deleteGroup);
+router.post('/', authenticate, requireStaffAccess, GroupController.createGroup);
+router.get('/', authenticate, requireStaffAccess, GroupController.getGroups);
+router.get('/:id', authenticate, requireStaffAccess, GroupController.getGroupById);
+router.get('/:id/details', authenticate, requireStaffAccess, GroupController.getGroupWithDetails);
+router.get('/:id/students', authenticate, requireStaffAccess, GroupController.getGroupStudents);
+router.get('/subject/:subjectId', authenticate, requireStaffAccess, GroupController.getGroupsBySubject);
+router.put('/:id', authenticate, requireStaffAccess, GroupController.updateGroup);
+router.delete('/:id', authenticate, requireStaffAccess, GroupController.deleteGroup);
 
 export default router;

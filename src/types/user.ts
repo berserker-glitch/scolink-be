@@ -53,3 +53,10 @@ export const createCenterAdminSchema = z.object({
 });
 
 export type CreateCenterAdminInput = z.infer<typeof createCenterAdminSchema>;
+
+export const createStaffSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  fullName: z.string().min(2, 'Full name must be at least 2 characters').optional(),
+});
+
+export type CreateStaffInput = z.infer<typeof createStaffSchema>;

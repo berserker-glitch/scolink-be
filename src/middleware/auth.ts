@@ -66,3 +66,4 @@ export const requireRole = (allowedRoles: string[]) => {
 
 export const requireSuperAdmin = requireRole(['super_admin']);
 export const requireAdmin = requireRole(['super_admin', 'center_admin']);
+export const requireStaffAccess = requireRole(['super_admin', 'center_admin', 'staff', 'teacher']);

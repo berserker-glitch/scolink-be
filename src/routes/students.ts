@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validation';
+import { checkStudentLimit } from '../middleware/planRestrictions';
 import {
   createStudent,
   getStudents,
@@ -22,7 +23,7 @@ const router = Router();
 router.use(authenticate);
 
 // Student CRUD routes
-router.post('/', validate(createStudentSchema), createStudent);
+router.post('/', validate(createStudentSchema), checkStudentLimit, createStudent);
 router.get('/', getStudents);
 router.get('/:id', getStudentById);
 router.put('/:id', validate(updateStudentSchema), updateStudent);

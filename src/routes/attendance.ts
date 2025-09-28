@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
+import { requireAttendanceAccess } from '../middleware/planRestrictions';
 import {
   createAttendanceRecord,
   bulkCreateAttendance,
@@ -17,8 +18,9 @@ import {
 
 const router = Router();
 
-// All attendance routes require authentication
+// All attendance routes require authentication and attendance access
 router.use(authenticate);
+router.use(requireAttendanceAccess);
 
 // Attendance CRUD routes
 router.post('/', createAttendanceRecord);

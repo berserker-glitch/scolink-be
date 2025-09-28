@@ -1,6 +1,6 @@
 import { User, UserRole } from '@prisma/client';
 import prisma from '@/config/database';
-import { hashPassword } from '@/utils/password';
+import { hashPassword, verifyPassword } from '@/utils/password';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 import { CreateUserInput, UpdateUserInput, UserResponse } from '@/types/user';
@@ -57,6 +57,60 @@ export class UserService {
       isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+    };
+  }
+
+  static async createStaff(args: {
+    email: string;
+    fullName?: string;
+    createdBy: {
+      userId: string;
+      role: UserRole;
+      centerId?: string | null;
+    };
+  }): Promise<{ user: UserResponse & { password: string } }> {
+    const { email, fullName, createdBy } = args;
+
+    if (!createdBy.centerId) {
+      throw createError('Center assignment required to create staff', 400);
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw createError('User with this email already exists', 409);
+    }
+
+    const rawPassword = Math.random().toString(36).slice(-10);
+    const passwordHash = await hashPassword(rawPassword);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        fullName: fullName || 'Staff Member',
+        role: 'staff',
+        centerId: createdBy.centerId,
+      },
+    });
+
+    logger.info('Staff user created successfully', { userId: user.id, email: user.email, centerId: user.centerId });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber || undefined,
+        role: user.role as any,
+        centerId: user.centerId || undefined,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        password: rawPassword,
+      },
     };
   }
 
@@ -305,5 +359,41 @@ export class UserService {
       limit,
       totalPages,
     };
+  }
+
+  static async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+    // Find user by ID
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.isActive) {
+      throw createError('User not found or inactive', 404);
+    }
+
+    // Verify old password
+    const isOldPasswordValid = await verifyPassword(oldPassword, user.passwordHash);
+    if (!isOldPasswordValid) {
+      throw createError('Current password is incorrect', 401);
+    }
+
+    // Validate new password length
+    if (newPassword.length < 6) {
+      throw createError('New password must be at least 6 characters long', 400);
+    }
+
+    // Hash new password
+    const newPasswordHash = await hashPassword(newPassword);
+
+    // Update user password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        passwordHash: newPasswordHash,
+        updatedAt: new Date(),
+      },
+    });
+
+    logger.info('Password changed successfully', { userId: user.id, email: user.email });
   }
 }
