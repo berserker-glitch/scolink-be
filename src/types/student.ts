@@ -51,6 +51,7 @@ export interface StudentResponse {
   cni?: string;
   centerId: string;
   isActive: boolean;
+  hasAccount?: boolean;
   createdAt: string;
   updatedAt: string;
   yearName?: string;

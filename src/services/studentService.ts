@@ -23,7 +23,7 @@ export class StudentService {
       },
     });
 
-    return this.formatStudentResponse(student);
+    return await this.formatStudentResponse(student);
   }
 
   static async getStudents(
@@ -109,7 +109,7 @@ export class StudentService {
       prisma.student.count({ where }),
     ]);
 
-      const formattedStudents = students.map(student => this.formatStudentResponse(student));
+      const formattedStudents = await Promise.all(students.map(student => this.formatStudentResponse(student)));
 
       return {
         students: formattedStudents,
@@ -146,7 +146,36 @@ export class StudentService {
 
     if (!student) return null;
 
-    return this.formatStudentResponse(student);
+    return await this.formatStudentResponse(student);
+  }
+
+  static async getStudentByPhone(phone: string, centerId: string): Promise<StudentResponse | null> {
+    const student = await prisma.student.findFirst({
+      where: { 
+        phone, 
+        centerId 
+      },
+      include: {
+        year: true,
+        field: true,
+        enrollments: {
+          include: {
+            group: {
+              include: {
+                subject: true,
+                teacher: true,
+                schedules: true,
+              },
+            },
+          },
+        },
+        payments: true,
+      },
+    });
+
+    if (!student) return null;
+
+    return await this.formatStudentResponse(student);
   }
 
   static async updateStudent(id: string, data: UpdateStudentRequest, centerId: string): Promise<StudentResponse | null> {
@@ -174,7 +203,7 @@ export class StudentService {
       },
     });
 
-    return this.formatStudentResponse(updatedStudent);
+    return await this.formatStudentResponse(updatedStudent);
   }
 
   static async deleteStudent(id: string, centerId: string): Promise<boolean> {
@@ -189,6 +218,58 @@ export class StudentService {
     });
 
     return true;
+  }
+
+  static async activateStudentAccount(studentId: string, phoneNumber: string, password: string, centerId: string): Promise<{ message: string; password: string }> {
+    // Check if student exists and belongs to the center
+    const student = await prisma.student.findFirst({
+      where: {
+        id: studentId,
+        centerId,
+      },
+    });
+
+    if (!student) {
+      const error: any = new Error('Student not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Check if user already exists with this phone number
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: phoneNumber,
+        centerId,
+      },
+    });
+
+    if (existingUser) {
+      const error: any = new Error('An account with this phone number already exists');
+      error.statusCode = 409;
+      throw error;
+    }
+
+    // Hash the password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user account for the student
+    await prisma.user.create({
+      data: {
+        email: phoneNumber, // Use phone as email/username
+        passwordHash: hashedPassword,
+        fullName: `${student.firstName} ${student.lastName}`,
+        role: 'student',
+        centerId,
+        phoneNumber: student.phone,
+        isActive: true,
+      },
+    });
+
+    return {
+      message: `Student account activated successfully. Login: ${phoneNumber}, Password: ${password}`,
+      password: password, // Return password so frontend can display it
+    };
   }
 
   static async enrollStudent(data: EnrollStudentRequest, centerId: string): Promise<boolean> {
@@ -285,7 +366,15 @@ export class StudentService {
     }));
   }
 
-  private static formatStudentResponse(student: any): StudentResponse {
+  private static async formatStudentResponse(student: any): Promise<StudentResponse> {
+    // Check if student has an account
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: student.phone,
+        centerId: student.centerId,
+      },
+    });
+
     return {
       id: student.id,
       firstName: student.firstName,
@@ -300,6 +389,7 @@ export class StudentService {
       cni: student.cni,
       centerId: student.centerId,
       isActive: student.isActive,
+      hasAccount: !!existingUser,
       createdAt: student.createdAt.toISOString(),
       updatedAt: student.updatedAt.toISOString(),
       yearName: student.year?.name,

@@ -483,3 +483,95 @@ export const removeStudentEnrollment = async (req: AuthenticatedRequest, res: Re
     });
   }
 };
+
+export const getCurrentStudent = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userEmail = req.user!.email; // This is the phone number for students
+    const centerId = req.user!.centerId;
+
+    if (!centerId) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied. User must be associated with a center.',
+        errors: ['No center association'],
+      });
+      return;
+    }
+
+    // Find student by phone number (stored as email in user table)
+    const student = await StudentService.getStudentByPhone(userEmail, centerId);
+
+    if (!student) {
+      res.status(404).json({
+        success: false,
+        message: 'Student profile not found',
+        errors: ['Student does not exist'],
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: student,
+      message: 'Student profile retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Get current student error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      errors: ['Failed to retrieve student profile'],
+    });
+  }
+};
+
+export const activateStudentAccount = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { studentId } = req.params;
+    const { phoneNumber, password } = req.body;
+    const centerId = req.user!.centerId;
+
+    if (!centerId) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied. User must be associated with a center.',
+        errors: ['No center association'],
+      });
+      return;
+    }
+
+    if (!phoneNumber || !password) {
+      res.status(400).json({
+        success: false,
+        message: 'Phone number and password are required',
+        errors: ['Missing required fields'],
+      });
+      return;
+    }
+
+    const result = await StudentService.activateStudentAccount(studentId, phoneNumber, password, centerId);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: 'Student account activated successfully',
+    });
+  } catch (error) {
+    console.error('Activate student account error:', error);
+
+    if (error instanceof Error && 'statusCode' in error) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        message: error.message,
+        errors: [error.message],
+      });
+      return;
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      errors: ['Failed to activate student account'],
+    });
+  }
+};

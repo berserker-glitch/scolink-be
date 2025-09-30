@@ -102,9 +102,9 @@ export class TeacherService {
 
   static async getTeacherWithGroups(id: string, centerId: string): Promise<TeacherWithGroupsResponse> {
     const teacher = await prisma.teacher.findFirst({
-      where: { 
+      where: {
         id,
-        centerId 
+        centerId
       },
       include: {
         groups: {
@@ -114,7 +114,7 @@ export class TeacherService {
             capacity: true,
             classNumber: true,
             subject: {
-              select: { name: true },
+              select: { id: true, name: true },
             },
             schedules: {
               select: {
@@ -130,6 +130,33 @@ export class TeacherService {
     });
 
     if (!teacher) {
+      // Check if there's a user with this ID and teacher role
+      const user = await prisma.user.findFirst({
+        where: {
+          id,
+          centerId,
+          role: 'teacher' as any
+        }
+      });
+
+      if (user) {
+        // User exists as teacher but no teacher record - return empty profile
+        return {
+          id: user.id,
+          name: user.fullName,
+          email: user.email,
+          phone: user.phoneNumber || undefined,
+          bio: undefined,
+          centerId: user.centerId!,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          groupsCount: 0,
+          subjects: [],
+          groups: []
+        };
+      }
+
       throw createError('Teacher not found', 404);
     }
 
@@ -151,6 +178,7 @@ export class TeacherService {
       groups: await Promise.all(teacher.groups.map(async (group) => ({
         id: group.id,
         name: group.name,
+        subjectId: group.subject.id,
         subjectName: group.subject.name,
         capacity: group.capacity,
         classNumber: group.classNumber,

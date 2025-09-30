@@ -1,8 +1,18 @@
 import { z } from 'zod';
 
-// Login Schema
+// Login Schema - accepts both email and phone number
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
+  email: z.string()
+    .min(1, 'Email or phone number is required')
+    .refine(
+      (val) => {
+        // Check if it's a valid email OR a valid phone number (digits only, 10+ chars)
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+        const isPhone = /^[0-9]{10,}$/.test(val);
+        return isEmail || isPhone;
+      },
+      { message: 'Please enter a valid email or phone number' }
+    ),
   password: z.string().min(1, 'Password is required'),
 });
 
