@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 export class WebhookController {
   // Hardcoded Paddle webhook secret key
-  private static readonly PADDLE_WEBHOOK_SECRET = 'pdl_ntfset_01k64jvx9q3hf24s2qjtcbcvpy_tD53O6MDhVCpSKr+hlEg7vePCnsxrjz9';
+  private static readonly PADDLE_WEBHOOK_SECRET = 'pdl_ntfset_01k6mkydhrk41a836pakt7m6gq_d98MwN+bD7RxEcC2vvq7tM/5vFSXL2hP';
 
   /**
    * Handle Paddle webhook events

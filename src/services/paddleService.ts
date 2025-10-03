@@ -5,12 +5,12 @@ import { createError } from '@/middleware/errorHandler';
 
 // Paddle configuration (hardcoded as requested)
 export const PADDLE_CONFIG = {
-  clientToken: 'test_002efe842e029f562973d724169',
-  productId: 'pro_01k63sra91ttt22p29xwxa7k6t',
+  clientToken: 'live_87ce83307a34173fb013fc11b31',
+  productId: 'pro_01k6512x55qw0ksvfnbspqvrdh',
   prices: {
-    professional: 'pri_01k63sshnpmsh731qfefga6kt0', // $25/month
-    premium: 'pri_01k641bc2ka8crnx09fw50bg5e',     // $50/month
-    lifetime: 'pri_01k641cyt65tvp34y12c44wv4e'     // $500 one-time
+    professional: 'pri_01k6513x6vgad5x9yf01qkavgw', // $25/month
+    premium: 'pri_01k6514j2vsd672528qrkj5tvj',     // $50/month
+    lifetime: 'pri_01k651560kcvm5xsa8s361p8ee'     // $500 one-time
   }
 };
 
