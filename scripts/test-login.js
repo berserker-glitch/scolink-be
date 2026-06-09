@@ -13,7 +13,7 @@ async function testLogin() {
     console.log('\n2. Testing login endpoint...');
     const loginResponse = await axios.post('http://localhost:3001/api/v1/auth/login', {
       email: 'admin@admin.com',
-      password: 'D8fd5D5694'
+      password: process.env.SUPER_ADMIN_PASSWORD || ''
     });
     
     console.log('✅ Login successful!');

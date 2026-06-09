@@ -41,7 +41,7 @@ const testLoginRoute = () => {
     
     const postData = JSON.stringify({
       email: 'admin@admin.com',
-      password: 'D8fd5D5694'
+      password: process.env.SUPER_ADMIN_PASSWORD || ''
     });
 
     const options = {

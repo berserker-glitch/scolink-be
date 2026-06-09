@@ -31,7 +31,7 @@ try {
   console.log('   • All user sessions');
   console.log();
   console.log('🔑 What was preserved:');
-  console.log('   • Super Admin: admin@admin.com / D8fd5D5694');
+  console.log('   • Super Admin: admin@admin.com / [configured SUPER_ADMIN_PASSWORD]');
   console.log();
   console.log('🎯 Database is now clean and ready for fresh data!');
 

@@ -6,8 +6,6 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { createWriteStream } from 'fs';
-import { join } from 'path';
 
 import routes from './routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
@@ -17,21 +15,19 @@ import env from './config/env';
 
 const app = express();
 
-// Trust proxy for ngrok and other reverse proxies /remove this if you are not using ngrok
-app.set('trust proxy', true);
-
-// Create logs directory if it doesn't exist
-const logsDir = join(process.cwd(), 'logs');
-try {
-  require('fs').mkdirSync(logsDir, { recursive: true });
-} catch (error) {
-  // Directory already exists or other error
-}
+app.set('trust proxy', env.TRUST_PROXY);
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: env.CORS_ORIGIN,
+  origin: (origin, callback) => {
+    if (!origin || env.CORS_ORIGIN.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 
@@ -66,40 +62,39 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Debug routes endpoint
-app.get('/debug/routes', (req, res) => {
-  const routes: Array<{ path: string; methods: string[] }> = [];
-  
-  // Get all registered routes
-  function extractRoutes(stack: any[], prefix: string = '') {
-    stack.forEach((layer: any) => {
-      if (layer.route) {
-        // Terminal route
-        const path = prefix + layer.route.path;
-        const methods = Object.keys(layer.route.methods);
-        routes.push({ path, methods });
-      } else if (layer.name === 'router' && layer.handle.stack) {
-        // Router middleware, dive deeper
-        const routerPrefix = layer.regexp.source
-          .replace('\\/?', '')
-          .replace('(?=\\/|$)', '')
-          .replace(/[()\\^$]/g, '')
-          .replace(/\\\//g, '/');
-        extractRoutes(layer.handle.stack, routerPrefix);
-      }
+if (env.NODE_ENV !== 'production') {
+  app.get('/debug/routes', (req, res) => {
+    const registeredRoutes: Array<{ path: string; methods: string[] }> = [];
+
+    function extractRoutes(stack: any[], prefix: string = '') {
+      stack.forEach((layer: any) => {
+        if (layer.route) {
+          registeredRoutes.push({
+            path: prefix + layer.route.path,
+            methods: Object.keys(layer.route.methods),
+          });
+        } else if (layer.name === 'router' && layer.handle.stack) {
+          const routerPrefix = layer.regexp.source
+            .replace('\\/?', '')
+            .replace('(?=\\/|$)', '')
+            .replace(/[()\\^$]/g, '')
+            .replace(/\\\//g, '/');
+          extractRoutes(layer.handle.stack, routerPrefix);
+        }
+      });
+    }
+
+    extractRoutes((app as any)._router.stack);
+
+    res.status(200).json({
+      success: true,
+      message: 'Available routes',
+      routes: registeredRoutes.sort((a, b) => a.path.localeCompare(b.path)),
+      environment: env.NODE_ENV,
+      timestamp: new Date().toISOString(),
     });
-  }
-  
-  extractRoutes((app as any)._router.stack);
-  
-  res.status(200).json({
-    success: true,
-    message: 'Available routes',
-    routes: routes.sort((a, b) => a.path.localeCompare(b.path)),
-    environment: env.NODE_ENV,
-    timestamp: new Date().toISOString(),
   });
-});
+}
 
 // API routes
 app.use(routes);
@@ -120,9 +115,6 @@ app.listen(PORT, () => {
     corsOrigin: env.CORS_ORIGIN,
   });
   
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${env.NODE_ENV}`);
-  console.log(`🌐 CORS Origin: ${env.CORS_ORIGIN}`);
 });
 
 // Graceful shutdown

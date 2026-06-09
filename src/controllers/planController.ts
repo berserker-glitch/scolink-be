@@ -39,9 +39,24 @@ export class PlanController {
       }
 
       const { plan } = validation.data;
-      
-      // Allow any plan selection through this endpoint
-      // Paid plans will be handled by Paddle webhooks for activation
+
+      if (req.user?.role !== 'center_admin') {
+        res.status(403).json({
+          success: false,
+          message: 'Only center admins can change plans',
+          errors: ['Insufficient permissions'],
+        });
+        return;
+      }
+
+      if (plan !== 'basic') {
+        res.status(403).json({
+          success: false,
+          message: 'Paid plans must be activated through checkout',
+          errors: ['Paid plans are activated by verified payment webhooks'],
+        });
+        return;
+      }
 
       const updatedCenter = await PlanService.updateCenterPlan(centerId, plan);
       

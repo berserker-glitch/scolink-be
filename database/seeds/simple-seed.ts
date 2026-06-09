@@ -1,10 +1,19 @@
 import { PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Starting database seeding...');
+  const superAdminSeedPassword = process.env.SUPER_ADMIN_PASSWORD;
+  const centerAdminSeedPassword = process.env.SEED_CENTER_ADMIN_PASSWORD;
+
+  if (!superAdminSeedPassword || !centerAdminSeedPassword) {
+    throw new Error('SUPER_ADMIN_PASSWORD and SEED_CENTER_ADMIN_PASSWORD are required for seeding');
+  }
 
   try {
     // Check if super admin already exists
@@ -18,7 +27,7 @@ async function main() {
     }
 
     // Create super admin user
-    const superAdminPassword = await bcrypt.hash('D8fd5D5694', 12);
+    const superAdminPassword = await bcrypt.hash(superAdminSeedPassword, 12);
     
     const superAdmin = await prisma.user.create({
       data: {
@@ -52,7 +61,7 @@ async function main() {
     });
 
     // Create sample center admin
-    const centerAdminPassword = await bcrypt.hash('Admin123!', 12);
+    const centerAdminPassword = await bcrypt.hash(centerAdminSeedPassword, 12);
     
     const centerAdmin = await prisma.user.create({
       data: {

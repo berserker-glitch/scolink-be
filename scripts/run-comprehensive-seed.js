@@ -29,7 +29,7 @@ try {
   console.log('   • 1000+ Student Enrollments in various subjects');
   console.log('   • Center Administrators for each center');
   console.log('\n🔑 Login Credentials:');
-  console.log('   Super Admin: admin@admin.com / D8fd5D5694');
+  console.log('   Super Admin: admin@admin.com / [configured SUPER_ADMIN_PASSWORD]');
   console.log('   Center Admins: admin@[centername].edu / Admin123!');
   console.log('\n🎯 The database is now ready for comprehensive testing!');
   

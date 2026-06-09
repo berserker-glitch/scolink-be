@@ -5,13 +5,19 @@ require('dotenv').config();
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL || 'mysql://root:yasserMBA123%23@localhost:3306/scolink_db',
+      url: process.env.DATABASE_URL,
     },
   },
 });
 
 async function seedDatabase() {
   console.log('=== Database Seeding Script ===');
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
+  const centerAdminPasswordValue = process.env.SEED_CENTER_ADMIN_PASSWORD;
+
+  if (!process.env.DATABASE_URL || !superAdminPassword || !centerAdminPasswordValue) {
+    throw new Error('DATABASE_URL, SUPER_ADMIN_PASSWORD, and SEED_CENTER_ADMIN_PASSWORD are required');
+  }
   
   try {
     await prisma.$connect();
@@ -35,14 +41,14 @@ async function seedDatabase() {
     
     // Hash password
     console.log('🔐 Hashing password...');
-    const hashedPassword = await bcrypt.hash('D8fd5D5694', 12);
+    const hashedPassword = await bcrypt.hash(superAdminPassword, 12);
     
     // Create super admin
     console.log('👤 Creating super admin...');
     const superAdmin = await prisma.user.create({
       data: {
         email: 'admin@admin.com',
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         fullName: 'Super Administrator',
         role: 'super_admin',
         isActive: true,
@@ -74,11 +80,11 @@ async function seedDatabase() {
     
     // Create center admin
     console.log('👤 Creating center admin...');
-    const centerAdminPassword = await bcrypt.hash('admin123', 12);
+    const centerAdminPassword = await bcrypt.hash(centerAdminPasswordValue, 12);
     const centerAdmin = await prisma.user.create({
       data: {
         email: 'center.admin@example.com',
-        password: centerAdminPassword,
+        passwordHash: centerAdminPassword,
         fullName: 'Center Administrator',
         role: 'center_admin',
         isActive: true,

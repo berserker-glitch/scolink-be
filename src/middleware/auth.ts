@@ -2,8 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '@/utils/jwt';
 import { AuthenticatedRequest } from '@/types/common';
 import { logger } from '@/utils/logger';
+import prisma from '@/config/database';
 
-export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -18,8 +19,41 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 
     const token = authHeader.substring(7);
     const payload = verifyAccessToken(token);
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      include: {
+        center: {
+          select: {
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid or expired access token',
+        errors: ['Authentication failed'],
+      });
+      return;
+    }
+
+    if (user.centerId && !user.center?.isActive) {
+      res.status(403).json({
+        success: false,
+        message: 'Center is inactive',
+        errors: ['Center access suspended'],
+      });
+      return;
+    }
     
-    (req as any).user = payload;
+    (req as any).user = {
+      ...payload,
+      email: user.email,
+      role: user.role,
+      centerId: user.centerId || undefined,
+    };
     next();
   } catch (error) {
     logger.error('Authentication failed', { error: error instanceof Error ? error.message : 'Unknown error' });

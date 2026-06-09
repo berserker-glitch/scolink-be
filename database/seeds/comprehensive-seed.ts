@@ -1,14 +1,10 @@
 import { PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      //url:'mysql://root:yasserMBA123%23@localhost:3306/scolink_db',
-      url: 'mysql://scolink:yasserMBA123%23@iwcc4cokws4s4scwgg044ow0:3306/scolink_db'
-    }
-  }
-});
+dotenv.config();
+
+const prisma = new PrismaClient();
 
 // Realistic Moroccan names
 const maleFirstNames = [
@@ -201,6 +197,12 @@ function generateCNI(): string {
 
 async function main() {
   console.log('🌱 Starting comprehensive database seeding...');
+  const superAdminSeedPassword = process.env.SUPER_ADMIN_PASSWORD;
+  const centerAdminSeedPassword = process.env.SEED_CENTER_ADMIN_PASSWORD;
+
+  if (!superAdminSeedPassword || !centerAdminSeedPassword) {
+    throw new Error('SUPER_ADMIN_PASSWORD and SEED_CENTER_ADMIN_PASSWORD are required for seeding');
+  }
 
   // Create shorter email mappings for centers
   const centerEmailMappings: { [key: string]: string } = {
@@ -218,7 +220,7 @@ async function main() {
 
     let superAdmin;
     if (!existingSuperAdmin) {
-      const superAdminPassword = await bcrypt.hash('D8fd5D5694', 12);
+      const superAdminPassword = await bcrypt.hash(superAdminSeedPassword, 12);
       superAdmin = await prisma.user.create({
         data: {
           email: 'admin@admin.com',
@@ -258,7 +260,7 @@ async function main() {
       centers.push(center);
 
       // Create center admin for each center with shorter email
-      const centerAdminPassword = await bcrypt.hash('Admin123!', 12);
+      const centerAdminPassword = await bcrypt.hash(centerAdminSeedPassword, 12);
       const emailPrefix = centerEmailMappings[center.name] || center.name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
       
       // Check if admin already exists

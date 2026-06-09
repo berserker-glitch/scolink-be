@@ -3,12 +3,15 @@ require('dotenv').config();
 
 console.log('=== Database Connection Test ===');
 console.log('DATABASE_URL from env:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
-console.log('DATABASE_URL value:', process.env.DATABASE_URL);
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is required');
+}
 
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL || 'mysql://root:yasserMBA123%23@localhost:3306/scolink_db',
+      url: process.env.DATABASE_URL,
     },
   },
 });

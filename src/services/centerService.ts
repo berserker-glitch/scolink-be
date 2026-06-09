@@ -1,4 +1,4 @@
-import { Center } from '@prisma/client';
+import { Center, UserRole } from '@prisma/client';
 import prisma from '@/config/database';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
@@ -6,6 +6,16 @@ import { CreateCenterInput, UpdateCenterInput, CenterResponse, CenterWithAdminsR
 import { PaginationQuery } from '@/types/common';
 
 export class CenterService {
+  private static assertCenterAccess(centerId: string, scope?: { role: UserRole; centerId?: string | null }): void {
+    if (!scope || scope.role === UserRole.super_admin) {
+      return;
+    }
+
+    if (!scope.centerId || scope.centerId !== centerId) {
+      throw createError('Center not found', 404);
+    }
+  }
+
   static async createCenter(centerData: CreateCenterInput, createdBy: string): Promise<CenterResponse> {
     const { name, location, phoneNumber, email } = centerData;
 
@@ -49,7 +59,9 @@ export class CenterService {
     };
   }
 
-  static async getCenterById(id: string): Promise<CenterResponse> {
+  static async getCenterById(id: string, scope?: { role: UserRole; centerId?: string | null }): Promise<CenterResponse> {
+    this.assertCenterAccess(id, scope);
+
     const center = await prisma.center.findUnique({
       where: { id },
       include: {
@@ -80,7 +92,9 @@ export class CenterService {
     };
   }
 
-  static async getCenterWithAdmins(id: string): Promise<CenterWithAdminsResponse> {
+  static async getCenterWithAdmins(id: string, scope?: { role: UserRole; centerId?: string | null }): Promise<CenterWithAdminsResponse> {
+    this.assertCenterAccess(id, scope);
+
     const center = await prisma.center.findUnique({
       where: { id },
       include: {
@@ -327,7 +341,7 @@ export class CenterService {
     };
   }
 
-  static async getCenters(pagination: PaginationQuery): Promise<{
+  static async getCenters(pagination: PaginationQuery, scope?: { role: UserRole; centerId?: string | null }): Promise<{
     centers: CenterResponse[];
     total: number;
     page: number;
@@ -337,15 +351,16 @@ export class CenterService {
     const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'desc' } = pagination;
     const skip = (page - 1) * limit;
 
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search } },
-            { location: { contains: search } },
-            { email: { contains: search } },
-          ],
-        }
-      : {};
+    const where: any = {
+      ...(scope && scope.role !== UserRole.super_admin && scope.centerId ? { id: scope.centerId } : {}),
+      ...(search && {
+        OR: [
+          { name: { contains: search } },
+          { location: { contains: search } },
+          { email: { contains: search } },
+        ],
+      }),
+    };
 
     const [centers, total] = await Promise.all([
       prisma.center.findMany({

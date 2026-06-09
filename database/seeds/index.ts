@@ -7,6 +7,11 @@ const prisma = new PrismaClient();
 
 async function main() {
   logger.info('Starting database seeding...');
+  const centerAdminSeedPassword = process.env.SEED_CENTER_ADMIN_PASSWORD;
+
+  if (!centerAdminSeedPassword) {
+    throw new Error('SEED_CENTER_ADMIN_PASSWORD is required for seeding');
+  }
 
   try {
     // Check if super admin already exists
@@ -56,7 +61,7 @@ async function main() {
     });
 
     // Create sample center admin
-    const centerAdminPassword = await hashPassword('Admin123!');
+    const centerAdminPassword = await hashPassword(centerAdminSeedPassword);
     
     const centerAdmin = await prisma.user.create({
       data: {

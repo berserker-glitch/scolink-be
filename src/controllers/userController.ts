@@ -95,6 +95,11 @@ export class UserController {
   static getUsers = async (req: Request, res: Response): Promise<void> => {
     try {
       const { page, limit, search, sortBy, sortOrder } = req.query;
+      const scope = (req as any).user as {
+        userId: string;
+        role: UserRole;
+        centerId?: string | null;
+      };
       
       const pagination = {
         page: page ? parseInt(page as string) : 1,
@@ -104,7 +109,7 @@ export class UserController {
         sortOrder: sortOrder as 'asc' | 'desc',
       };
       
-      const result = await UserService.getUsers(pagination);
+      const result = await UserService.getUsers(pagination, scope);
       
       res.status(200).json({
         success: true,
@@ -131,7 +136,12 @@ export class UserController {
   static getUserById = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const user = await UserService.getUserById(id);
+      const scope = (req as any).user as {
+        userId: string;
+        role: UserRole;
+        centerId?: string | null;
+      };
+      const user = await UserService.getUserById(id, scope);
       
       res.status(200).json({
         success: true,
@@ -226,7 +236,12 @@ export class UserController {
   static deleteUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      await UserService.deleteUser(id);
+      const scope = (req as any).user as {
+        userId: string;
+        role: UserRole;
+        centerId?: string | null;
+      };
+      await UserService.deleteUser(id, scope);
       
       res.status(200).json({
         success: true,
@@ -354,6 +369,21 @@ export class UserController {
   static getCenterAdmins = async (req: Request, res: Response): Promise<void> => {
     try {
       const { centerId } = req.params;
+      const scope = (req as any).user as {
+        userId: string;
+        role: UserRole;
+        centerId?: string | null;
+      };
+
+      if (scope.role !== UserRole.super_admin && scope.centerId !== centerId) {
+        res.status(404).json({
+          success: false,
+          message: 'Center not found',
+          errors: ['Center not found'],
+        });
+        return;
+      }
+
       const { page, limit, search, sortBy, sortOrder } = req.query;
       
       const pagination = {

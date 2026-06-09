@@ -14,6 +14,6 @@ router.post('/signup', AuthController.signup);
 router.post('/refresh', AuthController.refreshToken);
 router.get('/profile', authenticate, AuthController.getProfile);
 router.post('/logout', AuthController.logout);
-router.post('/logout-all', AuthController.logoutAll);
+router.post('/logout-all', authenticate, AuthController.logoutAll);
 
 export default router;

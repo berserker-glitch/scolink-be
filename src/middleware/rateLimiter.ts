@@ -4,7 +4,7 @@ import env from '@/config/env';
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: 10000, // Much higher limit for development
+  max: env.RATE_LIMIT_MAX_REQUESTS,
   message: {
     success: false,
     message: 'Too many requests',
@@ -17,7 +17,7 @@ export const apiLimiter = rateLimit({
 // Strict rate limiter for authentication endpoints
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Much higher limit for development
+  max: env.NODE_ENV === 'production' ? env.AUTH_RATE_LIMIT_MAX_REQUESTS : Math.max(env.AUTH_RATE_LIMIT_MAX_REQUESTS, 100),
   message: {
     success: false,
     message: 'Too many authentication attempts',
@@ -31,7 +31,7 @@ export const authLimiter = rateLimit({
 // Password reset rate limiter
 export const passwordResetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 100, // Higher limit for development
+  max: env.NODE_ENV === 'production' ? env.PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS : Math.max(env.PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS, 20),
   message: {
     success: false,
     message: 'Too many password reset attempts',

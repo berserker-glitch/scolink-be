@@ -1,4 +1,4 @@
-import { createWriteStream } from 'fs';
+import { createWriteStream, mkdirSync } from 'fs';
 import { join } from 'path';
 
 export enum LogLevel {
@@ -16,11 +16,53 @@ interface LogEntry {
 }
 
 class Logger {
-  private logStream = createWriteStream(join(process.cwd(), 'logs', 'app.log'), { flags: 'a' });
+  private logStream;
+
+  constructor() {
+    const logsDir = join(process.cwd(), 'logs');
+    mkdirSync(logsDir, { recursive: true });
+    this.logStream = createWriteStream(join(logsDir, 'app.log'), { flags: 'a' });
+  }
+
+  private redact(value: any): any {
+    const sensitiveKeys = new Set([
+      'password',
+      'passwordHash',
+      'oldPassword',
+      'newPassword',
+      'refreshToken',
+      'accessToken',
+      'authorization',
+      'token',
+      'secret',
+      'smtpPass',
+      'SMTP_PASS',
+      'databaseUrl',
+      'DATABASE_URL',
+      'paddleSignature',
+      'signature',
+    ]);
+
+    if (Array.isArray(value)) {
+      return value.map(item => this.redact(item));
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [
+          key,
+          sensitiveKeys.has(key) ? '[REDACTED]' : this.redact(item),
+        ])
+      );
+    }
+
+    return value;
+  }
 
   private formatLog(entry: LogEntry): string {
     return JSON.stringify({
       ...entry,
+      metadata: this.redact(entry.metadata),
       timestamp: new Date().toISOString(),
     }) + '\n';
   }

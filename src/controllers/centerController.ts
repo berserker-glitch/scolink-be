@@ -5,6 +5,13 @@ import { createCenterSchema, updateCenterSchema } from '@/types/center';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 import { AuthenticatedRequest } from '@/types/common';
+import { UserRole } from '@prisma/client';
+
+const getRequestScope = (req: Request) => (req as any).user as {
+  userId: string;
+  role: UserRole;
+  centerId?: string | null;
+};
 
 export class CenterController {
   static createCenter = [
@@ -53,6 +60,7 @@ export class CenterController {
   static getCenters = async (req: Request, res: Response): Promise<void> => {
     try {
       const { page, limit, search, sortBy, sortOrder } = req.query;
+      const scope = getRequestScope(req);
       
       const pagination = {
         page: page ? parseInt(page as string) : 1,
@@ -62,7 +70,7 @@ export class CenterController {
         sortOrder: sortOrder as 'asc' | 'desc',
       };
       
-      const result = await CenterService.getCenters(pagination);
+      const result = await CenterService.getCenters(pagination, scope);
       
       res.status(200).json({
         success: true,
@@ -89,7 +97,7 @@ export class CenterController {
   static getCenterById = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const center = await CenterService.getCenterById(id);
+      const center = await CenterService.getCenterById(id, getRequestScope(req));
       
       res.status(200).json({
         success: true,
@@ -119,7 +127,7 @@ export class CenterController {
   static getCenterWithAdmins = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const center = await CenterService.getCenterWithAdmins(id);
+      const center = await CenterService.getCenterWithAdmins(id, getRequestScope(req));
       
       res.status(200).json({
         success: true,

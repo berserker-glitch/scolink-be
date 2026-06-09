@@ -138,6 +138,10 @@ export class PlanService {
    * Update a center's plan (for plan selection)
    */
   static async updateCenterPlan(centerId: string, plan: CenterPlan): Promise<any> {
+    if (plan !== 'basic') {
+      throw createError('Paid plans must be activated through checkout', 403);
+    }
+
     const center = await prisma.center.findUnique({
       where: { id: centerId }
     });

@@ -13,17 +13,22 @@ const envSchema = z.object({
   // Server
   PORT: z.string().transform(Number).default('3001'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  TRUST_PROXY: z.coerce.boolean().default(false),
   
   // CORS
-  CORS_ORIGIN: z.string().default('http://localhost:8080'),
+  CORS_ORIGIN: z.string()
+    .default('http://localhost:8080')
+    .transform((value) => value.split(',').map(origin => origin.trim()).filter(Boolean)),
   
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
+  AUTH_RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('10'),
+  PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('5'),
   
   // Super Admin
   SUPER_ADMIN_EMAIL: z.string().email().default('admin@admin.com'),
-  SUPER_ADMIN_PASSWORD: z.string().min(8).default('D8fd5D5694'),
+  SUPER_ADMIN_PASSWORD: z.string().min(8).default('replace-with-super-admin-password'),
 
   // Email Service
   SMTP_HOST: z.string().min(1, 'SMTP_HOST is required'),
@@ -32,6 +37,30 @@ const envSchema = z.object({
   SMTP_PASS: z.string().min(1, 'SMTP_PASS is required'),
   EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email address'),
   SMTP_SECURE: z.coerce.boolean().default(false),
+
+  // Paddle
+  PADDLE_WEBHOOK_SECRET: z.string().optional(),
+  PADDLE_CLIENT_TOKEN: z.string().optional(),
+  PADDLE_PRODUCT_ID: z.string().optional(),
+  PADDLE_PRICE_PRO: z.string().optional(),
+  PADDLE_PRICE_PREMIUM: z.string().optional(),
+  PADDLE_PRICE_LIFETIME: z.string().optional(),
+}).superRefine((env, ctx) => {
+  if (env.NODE_ENV === 'production' && !env.PADDLE_WEBHOOK_SECRET) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['PADDLE_WEBHOOK_SECRET'],
+      message: 'PADDLE_WEBHOOK_SECRET is required in production',
+    });
+  }
+
+  if (env.NODE_ENV === 'production' && env.SUPER_ADMIN_PASSWORD.includes('replace-with')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['SUPER_ADMIN_PASSWORD'],
+      message: 'SUPER_ADMIN_PASSWORD must be set to a real secret in production',
+    });
+  }
 });
 
 const env = envSchema.parse(process.env);

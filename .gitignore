@@ -5,7 +5,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment variables
-
+.env
+.env.*
+!.env.example
 
 # Build output
 dist/
@@ -54,7 +56,6 @@ jspm_packages/
 .yarn-integrity
 
 # dotenv environment variables file
-
 .env.test
 
 # parcel-bundler cache (https://parceljs.org/)

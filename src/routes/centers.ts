@@ -8,8 +8,8 @@ const router = Router();
 // Center routes
 router.post('/', authenticate, requireSuperAdmin, CenterController.createCenter);
 router.get('/', authenticate, requireAdmin, CenterController.getCenters);
+router.get('/:id/details', authenticate, requireAdmin, CenterController.getCenterWithAdmins);
 router.get('/:id', authenticate, requireAdmin, CenterController.getCenterById);
-router.get('/:id/admins', authenticate, requireAdmin, CenterController.getCenterWithAdmins);
 router.put('/:id', authenticate, requireSuperAdmin, CenterController.updateCenter);
 router.delete('/:id', authenticate, requireSuperAdmin, CenterController.deleteCenter);
 router.put('/:id/suspend', authenticate, requireSuperAdmin, CenterController.suspendCenter);

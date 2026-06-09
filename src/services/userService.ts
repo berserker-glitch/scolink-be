@@ -7,6 +7,16 @@ import { CreateUserInput, UpdateUserInput, UserResponse } from '@/types/user';
 import { PaginationQuery } from '@/types/common';
 
 export class UserService {
+  private static assertUserAccess(user: User, scope?: { role: UserRole; centerId?: string | null }): void {
+    if (!scope || scope.role === UserRole.super_admin) {
+      return;
+    }
+
+    if (!scope.centerId || user.centerId !== scope.centerId || user.role === UserRole.super_admin) {
+      throw createError('User not found', 404);
+    }
+  }
+
   static async createUser(userData: CreateUserInput): Promise<UserResponse> {
     const { email, password, fullName, phoneNumber, role, centerId } = userData;
 
@@ -114,7 +124,7 @@ export class UserService {
     };
   }
 
-  static async getUserById(id: string): Promise<UserResponse> {
+  static async getUserById(id: string, scope?: { role: UserRole; centerId?: string | null }): Promise<UserResponse> {
     const user = await prisma.user.findUnique({
       where: { id },
       include: { center: true },
@@ -123,6 +133,8 @@ export class UserService {
     if (!user) {
       throw createError('User not found', 404);
     }
+
+    this.assertUserAccess(user, scope);
 
     return {
       id: user.id,
@@ -177,13 +189,19 @@ export class UserService {
     };
   }
 
-  static async deleteUser(id: string): Promise<void> {
+  static async deleteUser(id: string, scope?: { role: UserRole; centerId?: string | null }): Promise<void> {
     const user = await prisma.user.findUnique({
       where: { id },
     });
 
     if (!user) {
       throw createError('User not found', 404);
+    }
+
+    this.assertUserAccess(user, scope);
+
+    if (user.role === UserRole.super_admin) {
+      throw createError('Cannot delete super admin user', 403);
     }
 
     // Soft delete by setting isActive to false
@@ -258,7 +276,7 @@ export class UserService {
     };
   }
 
-  static async getUsers(pagination: PaginationQuery): Promise<{
+  static async getUsers(pagination: PaginationQuery, scope?: { role: UserRole; centerId?: string | null }): Promise<{
     users: UserResponse[];
     total: number;
     page: number;
@@ -268,14 +286,15 @@ export class UserService {
     const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'desc' } = pagination;
     const skip = (page - 1) * limit;
 
-    const where = search
-      ? {
-          OR: [
-            { email: { contains: search } },
-            { fullName: { contains: search } },
-          ],
-        }
-      : {};
+    const where: any = {
+      ...(scope && scope.role !== UserRole.super_admin && scope.centerId ? { centerId: scope.centerId } : {}),
+      ...(search && {
+        OR: [
+          { email: { contains: search } },
+          { fullName: { contains: search } },
+        ],
+      }),
+    };
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
