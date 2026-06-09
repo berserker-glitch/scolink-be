@@ -2,15 +2,15 @@ import { PaddleSubscriptionStatus, PaddleTransactionStatus } from '@prisma/clien
 import prisma from '@/config/database';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
+import env from '@/config/env';
 
-// Paddle configuration (hardcoded as requested)
 export const PADDLE_CONFIG = {
-  clientToken: 'live_87ce83307a34173fb013fc11b31',//'test_002efe842e029f562973d724169',
-  productId: 'pro_01k6512x55qw0ksvfnbspqvrdh',    //'pro_01k63sra91ttt22p29xwxa7k6t',
+  clientToken: env.PADDLE_CLIENT_TOKEN || '',
+  productId: env.PADDLE_PRODUCT_ID || '',
   prices: {
-    professional: 'pri_01k6513x6vgad5x9yf01qkavgw', //'pri_01k63sshnpmsh731qfefga6kt0', // $25/month
-    premium: 'pri_01k6514j2vsd672528qrkj5tvj', //'pri_01k641bc2ka8crnx09fw50bg5e',     // $50/month
-    lifetime: 'pri_01k651560kcvm5xsa8s361p8ee'//'pri_01k641cyt65tvp34y12c44wv4e'     // $500 one-time
+    professional: env.PADDLE_PRICE_PRO || '',
+    premium: env.PADDLE_PRICE_PREMIUM || '',
+    lifetime: env.PADDLE_PRICE_LIFETIME || ''
   }
 };
 
@@ -19,13 +19,6 @@ export class PaddleService {
    * Handle successful transaction from webhook
    */
   static async handleTransactionCompleted(webhookData: any): Promise<void> {
-    // Debug log the webhook data structure
-    logger.info('Raw webhook data structure:', {
-      keys: Object.keys(webhookData),
-      dataKeys: Object.keys(webhookData.data || {}),
-      dataPreview: JSON.stringify(webhookData.data).substring(0, 200)
-    });
-
     const transactionData = webhookData.data;
     const {
       subscription_id,
@@ -363,20 +356,27 @@ export class PaddleService {
       });
     }
 
-    const transaction = await prisma.paddleTransaction.create({
-      data: {
+    const transactionPayload = {
+      subscriptionId: subscription?.id || null,
+      paddleSubscriptionId: params.subscriptionId || null,
+      paddleCustomerId: params.customerId,
+      status: params.status,
+      amount: parseFloat(transactionData.details?.totals?.grand_total || '0'),
+      currency: transactionData.currency_code || 'USD',
+      billedAt: transactionData.billed_at ? new Date(transactionData.billed_at) : null,
+      paidAt: transactionData.paid_at ? new Date(transactionData.paid_at) : null,
+      receiptUrl: transactionData.receipt_url || null,
+      invoiceNumber: transactionData.invoice_number || null
+    };
+
+    const transaction = await prisma.paddleTransaction.upsert({
+      where: { paddleTransactionId: params.transactionId },
+      create: {
+        ...transactionPayload,
         subscriptionId: subscription?.id || null,
         paddleTransactionId: params.transactionId,
-        paddleSubscriptionId: params.subscriptionId || null,
-        paddleCustomerId: params.customerId,
-        status: params.status,
-        amount: parseFloat(transactionData.details?.totals?.grand_total || '0'),
-        currency: transactionData.currency_code || 'USD',
-        billedAt: transactionData.billed_at ? new Date(transactionData.billed_at) : null,
-        paidAt: transactionData.paid_at ? new Date(transactionData.paid_at) : null,
-        receiptUrl: transactionData.receipt_url || null,
-        invoiceNumber: transactionData.invoice_number || null
-      }
+      },
+      update: transactionPayload
     });
 
     return transaction;
@@ -385,7 +385,7 @@ export class PaddleService {
   /**
    * Get plan type from Paddle price ID
    */
-  private static getPlanTypeFromPriceId(priceId: string): 'basic' | 'pro' | 'premium' | 'lifetime' {
+  private static getPlanTypeFromPriceId(priceId: string): 'pro' | 'premium' | 'lifetime' {
     switch (priceId) {
       case PADDLE_CONFIG.prices.professional:
         return 'pro';
@@ -394,7 +394,7 @@ export class PaddleService {
       case PADDLE_CONFIG.prices.lifetime:
         return 'lifetime';
       default:
-        return 'basic';
+        throw createError('Unknown Paddle price ID', 400);
     }
   }
 

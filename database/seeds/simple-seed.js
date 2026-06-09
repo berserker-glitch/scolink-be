@@ -5,9 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+require("dotenv").config();
 const prisma = new client_1.PrismaClient();
 async function main() {
     console.log('Starting database seeding...');
+    const superAdminSeedPassword = process.env.SUPER_ADMIN_PASSWORD;
+    const centerAdminSeedPassword = process.env.SEED_CENTER_ADMIN_PASSWORD;
+    if (!superAdminSeedPassword || !centerAdminSeedPassword) {
+        throw new Error('SUPER_ADMIN_PASSWORD and SEED_CENTER_ADMIN_PASSWORD are required for seeding');
+    }
     try {
         const existingSuperAdmin = await prisma.user.findUnique({
             where: { email: 'admin@admin.com' },
@@ -16,7 +22,7 @@ async function main() {
             console.log('Super admin already exists, skipping creation');
             return;
         }
-        const superAdminPassword = await bcryptjs_1.default.hash('D8fd5D5694', 12);
+        const superAdminPassword = await bcryptjs_1.default.hash(superAdminSeedPassword, 12);
         const superAdmin = await prisma.user.create({
             data: {
                 email: 'admin@admin.com',
@@ -43,7 +49,7 @@ async function main() {
             id: sampleCenter.id,
             name: sampleCenter.name,
         });
-        const centerAdminPassword = await bcryptjs_1.default.hash('Admin123!', 12);
+        const centerAdminPassword = await bcryptjs_1.default.hash(centerAdminSeedPassword, 12);
         const centerAdmin = await prisma.user.create({
             data: {
                 email: 'admin@samplecenter.edu',

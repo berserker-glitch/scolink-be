@@ -326,7 +326,8 @@ export const markPaymentAsPaid = async (req: AuthRequest, res: Response): Promis
 // Update overdue payments (for cron job)
 export const updateOverduePayments = async (req: Request, res: Response): Promise<void> => {
   try {
-    const updatedCount = await PaymentService.updateOverduePayments();
+    const centerId = (req as AuthRequest).user?.centerId;
+    const updatedCount = await PaymentService.updateOverduePayments(centerId);
 
     res.json({
       success: true,

@@ -150,19 +150,8 @@ export class PlanService {
       throw createError('Center not found', 404);
     }
 
-    // Calculate expiry date for paid plans
-    let planExpiresAt: Date | null = null;
-    let subscriptionStatus: string | null = null;
-
-    if (plan === 'pro' || plan === 'premium') {
-      // For paid plans without Paddle subscription, set a temporary expiry
-      planExpiresAt = new Date();
-      planExpiresAt.setDate(planExpiresAt.getDate() + 7); // 7 days trial
-      subscriptionStatus = 'trial';
-    } else if (plan === 'basic') {
-      // Basic plan doesn't expire
-      subscriptionStatus = null;
-    }
+    const planExpiresAt: Date | null = null;
+    const subscriptionStatus: string | null = null;
 
     const updatedCenter = await prisma.center.update({
       where: { id: centerId },

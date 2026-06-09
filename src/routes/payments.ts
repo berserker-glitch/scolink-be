@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { validate } from '../middleware/validation';
+import { validate, validateQuery } from '../middleware/validation';
 import {
   createPayment,
   getPayments,
@@ -27,7 +27,7 @@ router.use(authenticate);
 
 // Payment CRUD routes
 router.post('/', validate(createPaymentSchema), createPayment);
-router.get('/', validate(paymentQuerySchema), getPayments);
+router.get('/', validateQuery(paymentQuerySchema), getPayments);
 router.get('/summary', getPaymentSummary);
 router.get('/:paymentId', getPaymentById);
 router.put('/:paymentId', validate(updatePaymentSchema), updatePayment);

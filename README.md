@@ -35,7 +35,7 @@ backend/
 
 ## 🔐 User Roles
 
-1. **Super Admin** (`admin@admin.com` / `D8fd5D5694`)
+1. **Super Admin** (`admin@admin.com` / configured `SUPER_ADMIN_PASSWORD`)
    - Can create and manage centers
    - Can create center administrators
    - Full system access

@@ -30,7 +30,7 @@ try {
   console.log('   • Center Administrators for each center');
   console.log('\n🔑 Login Credentials:');
   console.log('   Super Admin: admin@admin.com / [configured SUPER_ADMIN_PASSWORD]');
-  console.log('   Center Admins: admin@[centername].edu / Admin123!');
+  console.log('   Center Admins: admin@[centername].edu / [configured SEED_CENTER_ADMIN_PASSWORD]');
   console.log('\n🎯 The database is now ready for comprehensive testing!');
   
 } catch (error) {

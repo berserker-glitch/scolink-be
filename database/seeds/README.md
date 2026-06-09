@@ -103,12 +103,12 @@ npx tsx database/seeds/comprehensive-seed.ts
 
 ### Super Administrator
 - **Email**: admin@admin.com
-- **Password**: D8fd5D5694
+- **Password**: configured `SUPER_ADMIN_PASSWORD`
 - **Access**: Full system access
 
 ### Center Administrators
 - **Email Pattern**: admin@[centername].edu
-- **Password**: Admin123! (for all centers)
+- **Password**: configured `SEED_CENTER_ADMIN_PASSWORD`
 - **Access**: Center-specific administration
 
 #### Specific Center Admin Emails:

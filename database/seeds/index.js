@@ -45,7 +45,10 @@ async function main() {
             id: sampleCenter.id,
             name: sampleCenter.name,
         });
-        const centerAdminPassword = await (0, password_1.hashPassword)('Admin123!');
+        if (!process.env.SEED_CENTER_ADMIN_PASSWORD) {
+            throw new Error('SEED_CENTER_ADMIN_PASSWORD is required for seeding center admins.');
+        }
+        const centerAdminPassword = await (0, password_1.hashPassword)(process.env.SEED_CENTER_ADMIN_PASSWORD);
         const centerAdmin = await prisma.user.create({
             data: {
                 email: 'admin@samplecenter.edu',
