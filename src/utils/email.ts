@@ -2,15 +2,21 @@ import nodemailer from 'nodemailer';
 import env from '@/config/env';
 import { logger } from '@/utils/logger';
 
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_SECURE,
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS,
-  },
-});
+const createTransporter = () => {
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.EMAIL_FROM) {
+    throw new Error('SMTP is not configured');
+  }
+
+  return nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE,
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+  });
+};
 
 export interface SendEmailOptions {
   to: string;
@@ -22,8 +28,9 @@ export interface SendEmailOptions {
 export const emailService = {
   async sendEmail(options: SendEmailOptions): Promise<void> {
     try {
+      const transporter = createTransporter();
       await transporter.sendMail({
-        from: env.EMAIL_FROM,
+        from: env.EMAIL_FROM!,
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -383,4 +390,3 @@ Modern educational management made simple
     });
   },
 };
-

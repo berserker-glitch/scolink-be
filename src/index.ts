@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 
 import routes from './routes';
@@ -17,11 +17,11 @@ const app = express();
 
 app.set('trust proxy', env.TRUST_PROXY);
 
-// Security middleware
-app.use(helmet());
-app.use(cors({
+const normalizeOrigin = (origin: string) => origin.replace(/\/$/, '');
+const allowedOrigins = env.CORS_ORIGIN.map(normalizeOrigin);
+const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    if (!origin || env.CORS_ORIGIN.includes(origin)) {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(normalizeOrigin(origin))) {
       callback(null, true);
       return;
     }
@@ -29,7 +29,12 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-}));
+};
+
+// Security middleware
+app.use(helmet());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Rate limiting (exclude webhooks from rate limiting)
 app.use('/api', apiLimiter);
@@ -112,7 +117,7 @@ app.listen(PORT, () => {
   logger.info('Server started successfully', {
     port: PORT,
     environment: env.NODE_ENV,
-    corsOrigin: env.CORS_ORIGIN,
+    corsOrigin: allowedOrigins,
   });
   
 });

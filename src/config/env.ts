@@ -17,7 +17,7 @@ const envSchema = z.object({
   
   // CORS
   CORS_ORIGIN: z.string()
-    .default('http://localhost:8080')
+    .default('http://localhost:8080,http://localhost:5173,https://app.scolink.ink,https://scolink.ink,https://www.scolink.ink')
     .transform((value) => value.split(',').map(origin => origin.trim()).filter(Boolean)),
   
   // Rate Limiting
@@ -31,11 +31,11 @@ const envSchema = z.object({
   SUPER_ADMIN_PASSWORD: z.string().min(8).default('replace-with-super-admin-password'),
 
   // Email Service
-  SMTP_HOST: z.string().min(1, 'SMTP_HOST is required'),
+  SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
-  SMTP_USER: z.string().min(1, 'SMTP_USER is required'),
-  SMTP_PASS: z.string().min(1, 'SMTP_PASS is required'),
-  EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email address'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email address').optional(),
   SMTP_SECURE: z.coerce.boolean().default(false),
 
   // Paddle
@@ -46,14 +46,6 @@ const envSchema = z.object({
   PADDLE_PRICE_PREMIUM: z.string().optional(),
   PADDLE_PRICE_LIFETIME: z.string().optional(),
 }).superRefine((env, ctx) => {
-  if (env.NODE_ENV === 'production' && !env.PADDLE_WEBHOOK_SECRET) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['PADDLE_WEBHOOK_SECRET'],
-      message: 'PADDLE_WEBHOOK_SECRET is required in production',
-    });
-  }
-
   if (env.NODE_ENV === 'production' && env.SUPER_ADMIN_PASSWORD.includes('replace-with')) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
